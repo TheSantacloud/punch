@@ -22,8 +22,7 @@ type Sheet struct {
 }
 
 type Today struct {
-	Row int
-	// TODO: add company
+	Row   int
 	Date  string
 	Start string
 	End   string
@@ -33,8 +32,7 @@ const (
 	DATE_COLUMN  = "C"
 	START_COLUMN = "D"
 	END_COLUMN   = "E"
-	// TODO: make this grab from the spreadsheet as well/configurable
-	PPH = 500
+	PPH          = 500
 )
 
 func main() {
@@ -58,7 +56,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: add comment with cli
 	today.Update()
 	sheet.UpdateRow(today)
 
@@ -69,7 +66,6 @@ func main() {
 }
 
 func getClient(ctx context.Context) (*http.Client, error) {
-	// TODO: make this configurable
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("Unable to find home directory: %v", err)
@@ -94,11 +90,8 @@ func getSheet(ctx context.Context, client *http.Client) (*Sheet, error) {
 		return nil, err
 	}
 
-	// TODO: add configurable company in col A
-
 	sheet := Sheet{
-		Service: srv,
-		// TODO: make these configurable
+		Service:       srv,
 		SpreadsheetId: "1mkK5xy5YN_Jp8P_lACic6ZT4bGvSrbY6TsVp3Vlg1CQ",
 		SheetName:     "hours",
 	}
@@ -191,7 +184,6 @@ func printSummary(today *Today) {
 	start, _ := time.Parse("15:04:05", today.Start)
 	end, _ := time.Parse("15:04:05", today.End)
 	duration := end.Sub(start)
-	// TODO: make currency configurable
 	moneyMade := fmt.Sprintf("+%.2f₪", duration.Hours()*PPH)
 	fmt.Fprintf(os.Stdout, "[%s] Worked for %s (%s)\n", today.Date, duration, moneyMade)
 }
