@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -69,7 +70,12 @@ func main() {
 
 func getClient(ctx context.Context) (*http.Client, error) {
 	// TODO: make this configurable
-	b, err := os.ReadFile("service-account.json")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Unable to find home directory: %v", err)
+	}
+	path := filepath.Join(homeDir, ".work", "service-account.json")
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Unable to read service account key file: %v", err)
 	}
@@ -94,7 +100,7 @@ func getSheet(ctx context.Context, client *http.Client) (*Sheet, error) {
 		Service: srv,
 		// TODO: make these configurable
 		SpreadsheetId: "1mkK5xy5YN_Jp8P_lACic6ZT4bGvSrbY6TsVp3Vlg1CQ",
-		SheetName:     "test",
+		SheetName:     "hours",
 	}
 	return &sheet, nil
 }
