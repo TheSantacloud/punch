@@ -94,7 +94,7 @@ func getSheet(ctx context.Context, client *http.Client) (*Sheet, error) {
 		Service: srv,
 		// TODO: make these configurable
 		SpreadsheetId: "1mkK5xy5YN_Jp8P_lACic6ZT4bGvSrbY6TsVp3Vlg1CQ",
-		SheetName:     "hours",
+		SheetName:     "test",
 	}
 	return &sheet, nil
 }
@@ -119,6 +119,7 @@ func (s *Sheet) getTodaysRow() (*Today, error) {
 			start := ""
 			if len(row) == 3 {
 				end = row[2].(string)
+				start = row[1].(string)
 			} else if len(row) == 2 {
 				start = row[1].(string)
 			} else {
