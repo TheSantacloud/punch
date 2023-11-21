@@ -155,12 +155,12 @@ func (s *Sheet) getTodaysRow() (*Today, error) {
 func (t *Today) Update() {
 	if t.Start == "" {
 		t.Start = time.Now().Format("15:04:05")
-		fmt.Println("Checked in at", t.Start)
+		fmt.Fprintf(os.Stdout, "[%s] Checked in at %s\n", t.Date, t.Start)
 		return
 	}
 	if t.End == "" {
 		t.End = time.Now().Format("15:04:05")
-		fmt.Println("Checked out at", t.End)
+		fmt.Fprintf(os.Stdout, "[%s] Checked in at %s\n", t.Date, t.End)
 		return
 	}
 }
@@ -191,6 +191,7 @@ func printSummary(today *Today) {
 	start, _ := time.Parse("15:04:05", today.Start)
 	end, _ := time.Parse("15:04:05", today.End)
 	duration := end.Sub(start)
-	moneyMade := fmt.Sprintf("( %.2f ₪ )", duration.Hours()*PPH)
-	fmt.Println("Worked for", duration, moneyMade)
+	// TODO: make currency configurable
+	moneyMade := fmt.Sprintf("+%.2f₪", duration.Hours()*PPH)
+	fmt.Fprintf(os.Stdout, "[%s] Worked for %s (%s)\n", today.Date, duration, moneyMade)
 }
