@@ -1,7 +1,7 @@
 /*
 Copyright © 2023 Dor Munis <dormunis@gmail.com>
 */
-package cmd
+package cli
 
 import (
 	"os"
@@ -11,6 +11,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/dormunis/consulting/cmd/daily"
 	"github.com/dormunis/consulting/cmd/sheets"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +41,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func printSummary(today *sheets.Today) {
+func printSummary(today *daily.Today) {
 	start, _ := time.Parse("15:04:05", today.Start)
 	end, _ := time.Parse("15:04:05", today.End)
 	duration := end.Sub(start)

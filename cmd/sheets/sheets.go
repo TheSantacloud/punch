@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dormunis/consulting/cmd/daily"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -19,13 +20,6 @@ type Sheet struct {
 	Service       *sheets.Service
 	SpreadsheetId string
 	SheetName     string
-}
-
-type Today struct {
-	Row   int
-	Date  string
-	Start string
-	End   string
 }
 
 const (
@@ -52,10 +46,11 @@ func GetSheet() (*Sheet, error) {
 	sheet := Sheet{
 		Service:       srv,
 		SpreadsheetId: "1mkK5xy5YN_Jp8P_lACic6ZT4bGvSrbY6TsVp3Vlg1CQ",
-		SheetName:     "hours",
+		SheetName:     "test",
 	}
 	return &sheet, nil
 }
+
 func getClient(ctx context.Context) (*http.Client, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -74,7 +69,7 @@ func getClient(ctx context.Context) (*http.Client, error) {
 	return config.Client(ctx), nil
 }
 
-func (s *Sheet) GetTodaysRow() (*Today, error) {
+func (s *Sheet) GetTodaysRow() (*daily.Today, error) {
 	rangeString := s.SheetName + "!" + DATE_COLUMN + ":" + END_COLUMN
 	resp, err := s.Service.Spreadsheets.Values.Get(s.SpreadsheetId, rangeString).Do()
 	if err != nil {
@@ -101,7 +96,7 @@ func (s *Sheet) GetTodaysRow() (*Today, error) {
 				err = fmt.Errorf("Malformed sheet")
 			}
 
-			today := Today{
+			today := daily.Today{
 				Row:   i,
 				Date:  row[0].(string),
 				Start: start,
@@ -111,7 +106,7 @@ func (s *Sheet) GetTodaysRow() (*Today, error) {
 		}
 	}
 
-	today := Today{
+	today := daily.Today{
 		Row:   len(resp.Values),
 		Date:  todaysDate,
 		Start: "",
@@ -121,20 +116,7 @@ func (s *Sheet) GetTodaysRow() (*Today, error) {
 	return &today, nil
 }
 
-func (t *Today) Update() {
-	if t.Start == "" {
-		t.Start = time.Now().Format("15:04:05")
-		fmt.Fprintf(os.Stdout, "[%s] Checked in at %s\n", t.Date, t.Start)
-		return
-	}
-	if t.End == "" {
-		t.End = time.Now().Format("15:04:05")
-		fmt.Fprintf(os.Stdout, "[%s] Checked in at %s\n", t.Date, t.End)
-		return
-	}
-}
-
-func (s *Sheet) UpdateRow(today *Today) error {
+func (s *Sheet) UpdateRow(today *daily.Today) error {
 	rowStr := strconv.Itoa(today.Row + 1)
 
 	vr := &sheets.ValueRange{
