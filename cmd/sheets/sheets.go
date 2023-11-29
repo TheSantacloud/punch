@@ -26,6 +26,7 @@ const (
 	DATE_COLUMN  = "C"
 	START_COLUMN = "D"
 	END_COLUMN   = "E"
+	FINAL_COLUMN = "F"
 	PPH          = 500
 )
 
@@ -118,14 +119,18 @@ func (s *Sheet) GetTodaysRow() (*daily.Today, error) {
 
 func (s *Sheet) UpdateRow(today *daily.Today) error {
 	rowStr := strconv.Itoa(today.Row + 1)
+	formula := ""
+	if today.End != "" {
+		formula = fmt.Sprintf("=%s%d-%s%d", END_COLUMN, today.Row+1, START_COLUMN, today.Row+1)
+	}
 
 	vr := &sheets.ValueRange{
 		Values: [][]interface{}{
-			{today.Date, today.Start, today.End},
+			{today.Date, today.Start, today.End, formula},
 		},
 	}
 
-	updateRange := s.SheetName + "!" + DATE_COLUMN + rowStr + ":" + END_COLUMN + rowStr
+	updateRange := s.SheetName + "!" + DATE_COLUMN + rowStr + ":" + FINAL_COLUMN + rowStr
 
 	_, err := s.Service.Spreadsheets.Values.Update(
 		s.SpreadsheetId, updateRange, vr).
