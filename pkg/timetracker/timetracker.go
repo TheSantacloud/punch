@@ -2,6 +2,7 @@ package timetracker
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"time"
@@ -9,13 +10,13 @@ import (
 	"github.com/dormunis/punch/pkg/config"
 	"github.com/dormunis/punch/pkg/database"
 	"github.com/dormunis/punch/pkg/sheetsync"
+
+	"github.com/spf13/viper"
 )
 
 type TimeTracker struct {
 	sheet *sheetsync.Sheet
 	db    *database.Database
-
-	syncOnEndDay bool
 }
 
 func NewTimeTracker(cfg *config.Config) (*TimeTracker, error) {
@@ -27,19 +28,10 @@ func NewTimeTracker(cfg *config.Config) (*TimeTracker, error) {
 	sheet, err := sheetsync.GetSheet(*cfg.Sync.SpreadSheet)
 
 	tt := TimeTracker{
-		sheet:        sheet,
-		db:           db,
-		syncOnEndDay: cfg.Sync.SyncOnEndDay,
+		sheet: sheet,
+		db:    db,
 	}
 	return &tt, nil
-}
-
-func (tt *TimeTracker) Sheet() {
-	day, err := tt.GetDay(time.Now(), &database.Company{Name: "knostic"})
-	err = tt.sheet.UpsertDay(*day)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
 }
 
 func (tt *TimeTracker) ToggleCheckInOut(company *database.Company) error {
@@ -86,6 +78,10 @@ func (tt *TimeTracker) StartDay(company database.Company, timestamp time.Time) e
 		}
 		return fmt.Errorf("Unable to insert day: %v", err)
 	}
+	if slices.Contains(viper.GetStringSlice("sync.sync_action"), "start") {
+		slice := []database.Day{day}
+		err = tt.Sync(&slice)
+	}
 	return nil
 }
 
@@ -103,17 +99,29 @@ func (tt *TimeTracker) EndDay(company database.Company, timestamp time.Time) err
 		return fmt.Errorf("Unable to update day: %v", err)
 	}
 
-	if tt.syncOnEndDay {
-		err = tt.sheet.UpsertDay(*day)
-		if err != nil {
-			return fmt.Errorf("Unable to sync day: %v", err)
-		}
+	if slices.Contains(viper.GetStringSlice("sync.sync_action"), "end") {
+		slice := []database.Day{*day}
+		err = tt.Sync(&slice)
 	}
 	return nil
 }
 
-func (tt *TimeTracker) SyncDay() error {
-	// TODO: sync db to sheet
+func (tt *TimeTracker) Sync(days *[]database.Day) error {
+	var records []sheetsync.Record
+	err := tt.sheet.ParseSheet(&records)
+	if err != nil {
+		return err
+	}
+
+	// TODO: do this in bulk/async?
+	for _, day := range *days {
+		tt.db.UpdateDay(day)
+		err = tt.sheet.UpsertDay(day, &records)
+		if err != nil {
+			return fmt.Errorf("Unable to sync day: %v", err)
+		}
+	}
+
 	return nil
 }
 

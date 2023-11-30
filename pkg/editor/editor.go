@@ -7,10 +7,16 @@ import (
 	"os"
 	"os/exec"
 
+	"crypto/sha256"
+	"encoding/hex"
+
 	"github.com/spf13/viper"
 )
 
 func InteractiveEdit(buffer *bytes.Buffer, filetype string) error {
+	initialChecksum := sha256.Sum256(buffer.Bytes())
+	initialChecksumStr := hex.EncodeToString(initialChecksum[:])
+
 	tmpfile, err := os.CreateTemp("", fmt.Sprintf("editbuffer.*.%s", filetype))
 	if err != nil {
 		return err
@@ -47,6 +53,13 @@ func InteractiveEdit(buffer *bytes.Buffer, filetype string) error {
 	if err != nil {
 		log.Fatal(err)
 		return err
+	}
+
+	postEditChecksum := sha256.Sum256(updatedData)
+	postEditChecksumStr := hex.EncodeToString(postEditChecksum[:])
+
+	if initialChecksumStr == postEditChecksumStr {
+		return fmt.Errorf("No changes made")
 	}
 
 	buffer.Reset()

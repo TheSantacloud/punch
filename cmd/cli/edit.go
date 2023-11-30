@@ -47,12 +47,16 @@ var editDayCmd = &cobra.Command{
 			}
 			slice = &[]database.Day{*day}
 		}
-		editSlice(slice)
+		err = editSlice(slice)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		timeTracker.Sync(slice)
 	},
 }
 
-func editSlice(dailies *[]database.Day) error {
-	buf, err := database.SerializeDaysToYAML(*dailies)
+func editSlice(days *[]database.Day) error {
+	buf, err := database.SerializeDaysToYAML(*days)
 	if err != nil {
 		return err
 	}
@@ -62,7 +66,7 @@ func editSlice(dailies *[]database.Day) error {
 		return err
 	}
 
-	err = database.DeserializeDaysFromYAML(buf, dailies)
+	err = database.DeserializeDaysFromYAML(buf, days)
 	if err != nil {
 		return err
 	}

@@ -19,9 +19,9 @@ type Config struct {
 		DefaultCompany string `mapstructure:"default_company"`
 	}
 	Sync struct {
-		Engine       string               `validate:"omitempty,oneof=spreadsheet"`
-		SyncOnEndDay bool                 `mapstructure:"sync_on_end_day"`
-		SpreadSheet  *SpreadsheetSettings `validate:"omitempty"`
+		Engine      string               `validate:"omitempty,oneof=spreadsheet"`
+		SyncActions []string             `mapstructure:"sync_actions" validate:"omitempty,dive,oneof=start end"`
+		SpreadSheet *SpreadsheetSettings `validate:"omitempty"`
 	}
 }
 
@@ -76,7 +76,7 @@ func setupDefaultConfig() error {
 	viper.SetDefault("settings.editor", "vim")
 
 	if viper.IsSet("sync.engine") {
-		viper.SetDefault("sync.sync_on_end_day", true)
+		viper.SetDefault("sync.sync_actions", []string{"end"})
 	}
 
 	if err := viper.ReadInConfig(); err != nil {

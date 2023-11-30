@@ -22,15 +22,25 @@ type EditableDay struct {
 	EndTime   string `yaml:"end_time"`
 }
 
+func (d Day) Earnings() (float64, error) {
+	if d.Start == nil || d.End == nil {
+		return 0, fmt.Errorf("day not started or ended")
+	}
+	delta := d.End.Sub(*d.Start)
+	hours := delta.Hours()
+	value := float64(d.Company.PPH) * hours
+	return value, nil
+}
+
 func (d Day) Summary() string {
 	earnings := "Earnings: N/A"
 	duration := "Duration: N/A"
 
-	if d.Start != nil && d.End != nil {
+	value, err := d.Earnings()
+	if err == nil {
 		delta := d.End.Sub(*d.Start)
 		hours := delta.Hours()
 		duration = fmt.Sprintf("%.2f hours", hours)
-		value := float64(d.Company.PPH) * hours
 		earnings = fmt.Sprintf("₪%.2f", value)
 	}
 

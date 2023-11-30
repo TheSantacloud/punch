@@ -83,14 +83,8 @@ func GetSheet(cfg config.SpreadsheetSettings) (*Sheet, error) {
 	return &sheet, nil
 }
 
-func (s *Sheet) UpsertDay(day database.Day) error {
-	var records []Record
-	err := s.parseSheet(&records)
-	if err != nil {
-		return err
-	}
-
-	for _, record := range records {
+func (s *Sheet) UpsertDay(day database.Day, records *[]Record) error {
+	for _, record := range *records {
 		if record.Day.Start == nil {
 			continue
 		}
@@ -171,7 +165,7 @@ func getClient(ctx context.Context) (*http.Client, error) {
 	return config.Client(ctx), nil
 }
 
-func (s *Sheet) parseSheet(records *[]Record) error {
+func (s *Sheet) ParseSheet(records *[]Record) error {
 	resp, err := s.readSheet()
 	if err != nil {
 		return err
