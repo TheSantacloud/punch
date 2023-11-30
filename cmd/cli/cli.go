@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 Dor Munis <dormunis@gmail.com>
-*/
 package cli
 
 import (
@@ -11,52 +8,106 @@ import (
 	"log"
 	"time"
 
-	"github.com/dormunis/consulting/cmd/daily"
-	"github.com/dormunis/consulting/cmd/sheets"
+	"github.com/dormunis/punch/pkg/config"
+	"github.com/dormunis/punch/pkg/database"
+	"github.com/dormunis/punch/pkg/timetracker"
 	"github.com/spf13/cobra"
+)
+
+var (
+	timeTracker *timetracker.TimeTracker
+	companyName string
+	company     *database.Company
+	verbose     bool
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "punch",
 	Short: "Punchcard program for freelancers",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return getCompanyIfExists(companyName)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		sheet, err := sheets.GetSheet()
-		if err != nil {
-			log.Fatalf("Unable to retrieve Sheets client: %v", err)
-			os.Exit(1)
-		}
-
-		today, err := sheet.GetTodaysRow()
+		err := timeTracker.ToggleCheckInOut(company)
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
 		}
 
-		today.Update()
-		sheet.UpdateRow(today)
-
-		if today.End != "" {
-			printSummary(today)
+		day, err := timeTracker.GetDay(time.Now(), company)
+		if day.End != nil {
+			fmt.Println(day.Summary())
 		}
 	},
 }
 
-func printSummary(today *daily.Today) {
-	start, _ := time.Parse("15:04:05", today.Start)
-	end, _ := time.Parse("15:04:05", today.End)
-	duration := end.Sub(start)
-	moneyMade := fmt.Sprintf("+%.2f₪", duration.Hours()*sheets.PPH)
-	fmt.Fprintf(os.Stdout, "[%s] Worked for %s (%s)\n", today.Date, duration, moneyMade)
+var startCmd = &cobra.Command{
+	Use:   "start [time]",
+	Short: "Starts a new work day",
+	Args:  cobra.MaximumNArgs(1),
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return getCompanyIfExists(companyName)
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		timestamp, err := getParsedTimeFromArgs(args)
+		if err != nil {
+			log.Fatalf("%v", err)
+			os.Exit(1)
+		}
+
+		err = timeTracker.StartDay(*company, timestamp)
+		if err != nil {
+			log.Fatalf("%v", err)
+			os.Exit(1)
+		}
+
+	},
 }
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+var endCmd = &cobra.Command{
+	Use:   "end [time]",
+	Short: "End a work day",
+	Args:  cobra.MaximumNArgs(1),
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return getCompanyIfExists(companyName)
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		timestamp, err := getParsedTimeFromArgs(args)
+		if err != nil {
+			log.Fatalf("%v", err)
+			os.Exit(1)
+		}
+
+		err = timeTracker.EndDay(*company, timestamp)
+		if err != nil {
+			log.Fatalf("%v", err)
+			os.Exit(1)
+		}
+	},
 }
 
 func init() {
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.consulting.yaml)")
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
+	rootCmd.Flags().StringP("message", "m", "", "Comment or message")
+
+	startCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
+	endCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
+	endCmd.Flags().StringP("message", "m", "", "Comment or message")
+
+	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(endCmd)
+}
+
+func Execute(cfg *config.Config) {
+	var err error
+	timeTracker, err = timetracker.NewTimeTracker(cfg)
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+		os.Exit(1)
+	}
+
+	err = rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
 }

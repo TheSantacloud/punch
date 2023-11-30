@@ -3,8 +3,18 @@ Copyright © 2023 Dor Munis <dormunis@gmail.com>
 */
 package main
 
-import "github.com/dormunis/consulting/cmd/cli"
+import (
+	"github.com/dormunis/punch/cmd/cli"
+	"github.com/dormunis/punch/pkg/config"
+	"log"
+	"os"
+)
 
 func main() {
-	cli.Execute()
+	cfg, err := config.InitConfig()
+	if err != nil {
+		log.Fatalf("Unable to retrieve config: %v", err)
+		os.Exit(1)
+	}
+	cli.Execute(cfg)
 }
