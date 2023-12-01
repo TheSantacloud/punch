@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/spf13/viper"
@@ -83,4 +84,19 @@ func getCompanyIfExists(name string) error {
 		return fmt.Errorf("Company `%s` does not exist", name)
 	}
 	return nil
+}
+
+func parseYear(yearStr string) (int, error) {
+	return strconv.Atoi(yearStr)
+}
+
+func parseMonth(monthStr string) (time.Month, error) {
+	monthInt, err := strconv.Atoi(monthStr)
+	if err != nil {
+		return 0, err
+	}
+	if monthInt < 1 || monthInt > 12 {
+		return 0, fmt.Errorf("invalid month")
+	}
+	return time.Month(monthInt), nil
 }

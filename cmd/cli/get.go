@@ -5,20 +5,30 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/dormunis/punch/pkg/database"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+)
+
+type ReportTimeframe string
+
+const (
+	REPORT_TIMEFRAME_DAY   ReportTimeframe = "day"
+	REPORT_TIMEFRAME_WEEK  ReportTimeframe = "week"
+	REPORT_TIMEFRAME_MONTH ReportTimeframe = "month"
+	REPORT_TIMEFRAME_YEAR  ReportTimeframe = "year"
 )
 
 var (
-	weekReport  *bool
-	monthReport *bool
-	yearReport  *bool
-	allReport   *bool
-	output      string
-	filepath    string
+	weekReport      bool
+	monthReport     string
+	yearReport      string
+	reportTimeframe *ReportTimeframe
+	allReport       bool
+	output          string
+	filepath        string
 )
 
 var getCmd = &cobra.Command{
@@ -61,7 +71,6 @@ var getDayCmd = &cobra.Command{
 punch get day 2020-01-01
 punch get day 01-01`,
 	Aliases: []string{"days"},
-	Args:    cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		err := getCompanyIfExists(companyName)
 		if err != nil {
@@ -76,6 +85,11 @@ punch get day 01-01`,
 		if timeFlagCount > 1 {
 			return fmt.Errorf("only one of --week, --month, --year or --all can be set")
 		}
+
+		reportTimeframe, err = getReportTimeframe()
+		if err != nil {
+			return err
+		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -85,11 +99,51 @@ punch get day 01-01`,
 	},
 }
 
+func getReportTimeframe() (*ReportTimeframe, error) {
+	reportTimeframe := REPORT_TIMEFRAME_DAY
+	if weekReport {
+		reportTimeframe = REPORT_TIMEFRAME_WEEK
+	} else if monthReport != "" {
+		if err := validateMonth(monthReport); err != nil {
+			return nil, err
+		}
+		reportTimeframe = REPORT_TIMEFRAME_MONTH
+	} else if yearReport != "" {
+		if err := validateYear(yearReport); err != nil {
+			return nil, err
+		}
+		reportTimeframe = REPORT_TIMEFRAME_YEAR
+	}
+	return &reportTimeframe, nil
+}
+
+func validateMonth(month string) error {
+	monthInt, err := strconv.Atoi(month)
+	if err != nil {
+		return fmt.Errorf("invalid month format")
+	}
+	if monthInt < 1 || monthInt > 12 {
+		return fmt.Errorf("invalid month format")
+	}
+	return nil
+}
+
+func validateYear(year string) error {
+	yearInt, err := strconv.Atoi(year)
+	if err != nil {
+		return fmt.Errorf("invalid year format")
+	}
+	currentYear := time.Now().Year()
+	if yearInt < 1970 || yearInt > currentYear {
+		return fmt.Errorf("invalid year format")
+	}
+	return nil
+}
+
 func getRelevatDays() *[]database.Day {
 	var slice []database.Day
-	timeFlagCount := getAmountOfTimeFilterFlags()
 
-	if timeFlagCount == 0 {
+	if *reportTimeframe == REPORT_TIMEFRAME_DAY {
 		day, err := timeTracker.GetDay(time.Now(), company)
 		if err != nil {
 			log.Fatalf("%v", err)
@@ -98,13 +152,14 @@ func getRelevatDays() *[]database.Day {
 		slice = []database.Day{*day}
 	} else {
 		startDate := getStartDate()
+		endDate := getEndDate(startDate)
 		days, err := timeTracker.GetAllDays(company)
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
 		}
 		for _, day := range *days {
-			if day.Start.After(startDate) {
+			if day.Start.After(startDate) && day.End.Before(endDate) {
 				slice = append(slice, day)
 			}
 		}
@@ -113,6 +168,9 @@ func getRelevatDays() *[]database.Day {
 }
 
 func generateView(slice *[]database.Day) string {
+	if len(*slice) == 0 {
+		log.Fatalf("No available data")
+	}
 	var (
 		buffer        *bytes.Buffer
 		err           error
@@ -133,16 +191,18 @@ func generateView(slice *[]database.Day) string {
 				content += "\n"
 			}
 		}
-		if !verbose {
-			date := getStartDate().Format("2006-01-02")
-			currency := viper.GetString("settings.currency")
-			content += fmt.Sprintf("%s\t%s\t%s\t%s%.2f\n",
-				date,
-				company.Name,
-				totalDuration,
-				currency,
-				totalEarnings)
+
+		prefix := getStartDate().Format("2006-01-02")
+		if verbose {
+			prefix = "Total\t"
 		}
+		content += fmt.Sprintf("%s\t%s\t%s\t%.2f %s\n",
+			prefix,
+			company.Name,
+			totalDuration,
+			totalEarnings,
+			company.Currency,
+		)
 	case "csv":
 		if verbose {
 			buffer, err = database.SerializeDaysToFullCSV(*slice)
@@ -159,26 +219,70 @@ func generateView(slice *[]database.Day) string {
 }
 
 func getStartDate() time.Time {
-	year, month, day := time.Now().Date()
-	now := time.Date(year, month, day, 0, 0, 0, 0, time.Now().Location())
-	if *weekReport {
-		dayOfTheWeek := time.Now().Weekday()
-		return now.AddDate(0, 0, -int(dayOfTheWeek))
+	today := time.Now()
+	year, _, _ := today.Date()
+
+	switch *reportTimeframe {
+	case REPORT_TIMEFRAME_WEEK:
+		return today.AddDate(0, 0, -int(today.Weekday()))
+
+	case REPORT_TIMEFRAME_YEAR:
+		yr, err := parseYear(yearReport)
+		if err == nil {
+			return time.Date(yr, time.January, 1, 0, 0, 0, 0, today.Location())
+		}
+
+	case REPORT_TIMEFRAME_MONTH:
+		mo, err := parseMonth(monthReport)
+		if err == nil {
+			return time.Date(year, mo, 1, 0, 0, 0, 0, today.Location())
+		}
 	}
-	if *yearReport {
-		dayOfTheYear := time.Now().YearDay()
-		return now.AddDate(0, 0, -int(dayOfTheYear)+1)
-	}
-	if *allReport {
+
+	if allReport {
 		return time.Time{}
 	}
-	// default to month
-	dayOfTheMonth := time.Now().Day()
-	return now.AddDate(0, 0, -int(dayOfTheMonth)+1)
+
+	return today.AddDate(0, 0, -today.Day()+1)
+}
+
+func getEndDate(startDate time.Time) time.Time {
+	year, _, _ := startDate.Date()
+
+	switch *reportTimeframe {
+	case REPORT_TIMEFRAME_WEEK:
+		return startDate.AddDate(0, 0, 6)
+
+	case REPORT_TIMEFRAME_YEAR:
+		yr, err := parseYear(yearReport)
+		if err == nil {
+			return time.Date(yr, time.December, 31, 0, 0, 0, 0, startDate.Location())
+		}
+
+	case REPORT_TIMEFRAME_MONTH:
+		mo, err := parseMonth(monthReport)
+		if err == nil {
+			lastDay := lastDayOfMonth(year, mo)
+			return time.Date(year, mo, lastDay, 0, 0, 0, 0, startDate.Location())
+		}
+	}
+
+	if allReport {
+		return time.Time{}
+	}
+
+	return startDate
+}
+
+func lastDayOfMonth(year int, month time.Month) int {
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
 func getAmountOfTimeFilterFlags() int8 {
-	flags := []bool{*weekReport, *monthReport, *yearReport, *allReport}
+	flags := []bool{weekReport,
+		monthReport != "",
+		yearReport != "",
+		allReport}
 	setFlags := 0
 	for _, flag := range flags {
 		if flag {
@@ -199,16 +303,17 @@ func preRunCheckOutput() error {
 }
 
 func init() {
+	currentYear, currentMonth, _ := time.Now().Date()
 	rootCmd.AddCommand(getCmd)
-	getCmd.AddCommand(getCompanyCmd)
 	getCmd.AddCommand(getDayCmd)
+	getCmd.AddCommand(getCompanyCmd)
 	getDayCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-	getCompanyCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
 	getDayCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
-	// TODO: make month and year string flags with default values of current
-	getDayCmd.Flags().BoolVar(weekReport, "week", false, "Get a specific week")
-	getDayCmd.Flags().BoolVar(monthReport, "month", false, "Get a specific month")
-	getDayCmd.Flags().BoolVar(yearReport, "year", false, "Get a specific year")
-	getDayCmd.Flags().BoolVar(allReport, "all", false, "Get all days")
+	getDayCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for a specific week (format: YYYY-WW), leave empty for current week")
+	getDayCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
+	getDayCmd.Flags().StringVar(&yearReport, "year", "", "Get report for a specific year (format: YYYY), leave empty for current year")
+	getDayCmd.Flags().BoolVar(&allReport, "all", false, "Get all days")
 	getDayCmd.Flags().StringVarP(&output, "output", "o", "text", "Specify the output format")
+	getDayCmd.Flags().Lookup("month").NoOptDefVal = strconv.Itoa(int(currentMonth))
+	getDayCmd.Flags().Lookup("year").NoOptDefVal = strconv.Itoa(currentYear)
 }
