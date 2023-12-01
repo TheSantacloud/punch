@@ -72,7 +72,7 @@ func setupDefaultConfig() error {
 	viper.SetDefault("database.engine", "sqlite3")
 	viper.SetDefault("database.path", filepath.Join(configPath, "punch.db"))
 
-	viper.SetDefault("settings.currency", "$")
+	viper.SetDefault("settings.default_currency", "USD")
 	viper.SetDefault("settings.editor", "vim")
 
 	if viper.IsSet("sync.engine") {

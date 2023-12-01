@@ -82,7 +82,7 @@ func (d *Database) GetCompany(name string) (*Company, error) {
 
 	var company Company
 	for rows.Next() {
-		err := rows.Scan(&company.Name, &company.PPH)
+		err := rows.Scan(&company.Name, &company.PPH, &company.Currency)
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +256,7 @@ func (d *Database) GetAllDays(company Company) (*[]Day, error) {
 
 func (d *Database) Init() {
 	sqlStmt := `
-    CREATE TABLE IF NOT EXISTS companies (name TEXT NOT NULL PRIMARY KEY, pph INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS companies (name TEXT NOT NULL PRIMARY KEY, pph INTEGER NOT NULL, currency TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS days (company TEXT NOT NULL, date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, PRIMARY KEY (company, date), FOREIGN KEY (company) REFERENCES companies(name));
     `
 	_, err := d.db.Exec(sqlStmt)

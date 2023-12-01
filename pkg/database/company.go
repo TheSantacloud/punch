@@ -4,15 +4,14 @@ import (
 	"fmt"
 
 	_ "github.com/BurntSushi/toml"
-	"github.com/spf13/viper"
 )
 
 type Company struct {
-	Name string `toml:"name"`
-	PPH  int32  `toml:"pph"`
+	Name     string `toml:"name"`
+	PPH      int32  `toml:"pph"`
+	Currency string `toml:"currency"`
 }
 
 func (c Company) String() string {
-	cur := viper.GetString("settings.currency")
-	return fmt.Sprintf("%s\t%s%d", c.Name, cur, c.PPH)
+	return fmt.Sprintf("%s\t%d %s", c.Name, c.PPH, c.Currency)
 }

@@ -5,6 +5,11 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+var (
+	currency string
 )
 
 var addCmd = &cobra.Command{
@@ -28,19 +33,13 @@ var addCompanyCmd = &cobra.Command{
 	},
 }
 
-var addDayCmd = &cobra.Command{
-	Use:   "day [date]",
-	Short: "add a work day",
-	Args:  cobra.MaximumNArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(companyName)
-	},
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
 func init() {
+	defaultCurrency := viper.GetString("settings.default_currency")
+	if defaultCurrency == "" {
+		defaultCurrency = "USD"
+	}
 	rootCmd.AddCommand(addCmd)
 	addCmd.AddCommand(addCompanyCmd)
-	addCmd.AddCommand(addDayCmd)
+	addCompanyCmd.Flags().StringVar(&currency, "currency", defaultCurrency,
+		"currency in which the company pays (defaults to USD)")
 }

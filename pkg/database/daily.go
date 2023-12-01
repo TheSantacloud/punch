@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,8 +29,7 @@ func (d Day) Summary() string {
 	value, err := d.Earnings()
 	if err == nil {
 		duration = d.Duration()
-		currency := viper.GetString("settings.currency")
-		earnings = fmt.Sprintf("%s%.2f", currency, value)
+		earnings = fmt.Sprintf("%.2f %s", value, d.Company.Currency)
 	}
 
 	date := d.Start.Format("2006-01-02")
