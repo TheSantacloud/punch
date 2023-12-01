@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -22,6 +23,21 @@ type EditableDay struct {
 	EndTime   string `yaml:"end_time"`
 }
 
+func (d Day) Summary() string {
+	earnings := "Earnings: N/A"
+	duration := "Duration: N/A"
+
+	value, err := d.Earnings()
+	if err == nil {
+		duration = d.Duration()
+		currency := viper.GetString("settings.currency")
+		earnings = fmt.Sprintf("%s%.2f", currency, value)
+	}
+
+	date := d.Start.Format("2006-01-02")
+	return fmt.Sprintf("%s\t%s\t%s\t%s", date, d.Company.Name, duration, earnings)
+}
+
 func (d Day) Earnings() (float64, error) {
 	if d.Start == nil || d.End == nil {
 		return 0, fmt.Errorf("day not started or ended")
@@ -30,21 +46,6 @@ func (d Day) Earnings() (float64, error) {
 	hours := delta.Hours()
 	value := float64(d.Company.PPH) * hours
 	return value, nil
-}
-
-func (d Day) Summary() string {
-	earnings := "Earnings: N/A"
-	duration := "Duration: N/A"
-
-	value, err := d.Earnings()
-	if err == nil {
-		delta := d.End.Sub(*d.Start)
-		hours := delta.Hours()
-		duration = fmt.Sprintf("%.2f hours", hours)
-		earnings = fmt.Sprintf("₪%.2f", value)
-	}
-
-	return fmt.Sprintf("%s (%s)", duration, earnings)
 }
 
 func (d Day) Duration() string {
@@ -58,31 +59,6 @@ func (d Day) Duration() string {
 	seconds := int(delta.Seconds()) % 60
 
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
-}
-
-func (d Day) FullSummary() string {
-	summary := fmt.Sprintf("Company: %s\n", d.Company.Name)
-	date := "Date: N/A"
-	startTime := "Start: Not Started"
-	endTime := "End: In Progress"
-	duration := "Duration: N/A"
-	earnings := "Earnings: N/A"
-
-	if d.Start != nil {
-		date = "Date: " + d.Start.Format("2006-01-02")
-		startTime = "Start: " + d.Start.Format("15:04:05")
-
-		if d.End != nil {
-			endTime = "End: " + d.End.Format("15:04:05")
-			delta := d.End.Sub(*d.Start)
-			hours := delta.Hours()
-			duration = fmt.Sprintf("Duration: %.2f hours", hours)
-			value := float64(d.Company.PPH) * hours
-			earnings = fmt.Sprintf("Earnings: ₪%.2f", value)
-		}
-	}
-
-	return summary + fmt.Sprintf("%s\n%s\n%s\n%s\n%s", date, startTime, endTime, duration, earnings)
 }
 
 func SerializeDaysToYAML(dailies []Day) (*bytes.Buffer, error) {
@@ -164,4 +140,39 @@ func DeserializeDaysFromYAML(buf *bytes.Buffer, dailies *[]Day) error {
 	}
 
 	return nil
+}
+
+func SerializeDaysToCSV(dailies []Day) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	buf.WriteString("company,date,duration\n")
+	for _, day := range dailies {
+		buf.WriteString(fmt.Sprintf("%s,%s,%s\n",
+			day.Company.Name,
+			day.Start.Format("2006-01-02"),
+			day.Duration(),
+		))
+	}
+
+	return &buf, nil
+}
+
+func SerializeDaysToFullCSV(dailies []Day) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	buf.WriteString("company,date,start_time,end_time,hours,earnings\n")
+	for _, day := range dailies {
+		earnings, _ := day.Earnings()
+
+		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%.2f\n",
+			day.Company.Name,
+			day.Start.Format("2006-01-02"),
+			day.Start.Format("15:04:05"),
+			day.End.Format("15:04:05"),
+			day.Duration(),
+			earnings,
+		))
+	}
+
+	return &buf, nil
 }

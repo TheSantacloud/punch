@@ -215,7 +215,7 @@ func (d *Database) GetAllDays(company Company) (*[]Day, error) {
 	}
 	defer rows.Close()
 
-	var dailies []Day
+	var days []Day
 	for rows.Next() {
 		var day Day
 		var date, startTime, endTime string
@@ -244,14 +244,14 @@ func (d *Database) GetAllDays(company Company) (*[]Day, error) {
 			return nil, err
 		}
 		day.Company = *company
-		dailies = append(dailies, day)
+		days = append(days, day)
 	}
 	err = rows.Err()
 	if err != nil {
 		return nil, err
 	}
 
-	return &dailies, nil
+	return &days, nil
 }
 
 func (d *Database) Init() {
