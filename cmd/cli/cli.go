@@ -36,7 +36,9 @@ var rootCmd = &cobra.Command{
 
 		day, err := timeTracker.GetDay(time.Now(), company)
 		if day.End != nil {
-			fmt.Println(day.Summary())
+			printEOD(day)
+		} else {
+			printBOD(day)
 		}
 	},
 }
@@ -55,11 +57,12 @@ var startCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = timeTracker.StartDay(*company, timestamp)
+		day, err := timeTracker.StartDay(*company, timestamp)
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
 		}
+		printBOD(day)
 
 	},
 }
@@ -78,12 +81,31 @@ var endCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = timeTracker.EndDay(*company, timestamp)
+		day, err := timeTracker.EndDay(*company, timestamp)
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
 		}
+		printEOD(day)
 	},
+}
+
+func printBOD(day *database.Day) {
+	fmt.Printf("Clocked in at %s\n", day.Start.Format("15:04:05"))
+}
+
+func printEOD(day *database.Day) {
+	earnings, err := day.Earnings()
+	duration := day.End.Sub(*day.Start)
+	if err != nil {
+		log.Fatalf("%v", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Clocked out at %s after %s (%.2f %s)\n",
+		day.Start.Format("15:04:05"),
+		duration,
+		earnings,
+		day.Company.Currency)
 }
 
 func init() {

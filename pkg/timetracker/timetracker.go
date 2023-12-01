@@ -36,12 +36,8 @@ func NewTimeTracker(cfg *config.Config) (*TimeTracker, error) {
 
 func (tt *TimeTracker) ToggleCheckInOut(company *database.Company) error {
 	today := time.Now()
-	day, err := tt.db.GetDay(today, *company)
+	_, err := tt.db.GetDay(today, *company)
 	if err != nil {
-		return fmt.Errorf("Unable to get day: %v", err)
-	}
-
-	if day.Start == nil {
 		tt.StartDay(*company, today)
 	} else {
 		tt.EndDay(*company, today)
@@ -66,7 +62,7 @@ func (tt *TimeTracker) GetAllDays(company *database.Company) (*[]database.Day, e
 	return days, nil
 }
 
-func (tt *TimeTracker) StartDay(company database.Company, timestamp time.Time) error {
+func (tt *TimeTracker) StartDay(company database.Company, timestamp time.Time) (*database.Day, error) {
 	day := database.Day{
 		Company: company,
 		Start:   &timestamp,
@@ -74,36 +70,36 @@ func (tt *TimeTracker) StartDay(company database.Company, timestamp time.Time) e
 	err := tt.db.InsertNewDay(day)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return fmt.Errorf("Day already started; multiple starts not supported")
+			return nil, fmt.Errorf("Day already started; multiple starts not supported")
 		}
-		return fmt.Errorf("Unable to insert day: %v", err)
+		return nil, fmt.Errorf("Unable to insert day: %v", err)
 	}
 	if slices.Contains(viper.GetStringSlice("sync.sync_action"), "start") {
 		slice := []database.Day{day}
 		err = tt.Sync(&slice)
 	}
-	return nil
+	return &day, nil
 }
 
-func (tt *TimeTracker) EndDay(company database.Company, timestamp time.Time) error {
+func (tt *TimeTracker) EndDay(company database.Company, timestamp time.Time) (*database.Day, error) {
 	day, err := tt.db.GetDay(timestamp, company)
 	if err != nil {
-		return fmt.Errorf("Unable to get day: %v", err)
+		return nil, fmt.Errorf("Unable to get day: %v", err)
 	}
 	if day.End != nil {
-		return fmt.Errorf("Day already ended")
+		return nil, fmt.Errorf("Day already ended")
 	}
 	day.End = &timestamp
 	err = tt.db.UpdateDay(*day)
 	if err != nil {
-		return fmt.Errorf("Unable to update day: %v", err)
+		return nil, fmt.Errorf("Unable to update day: %v", err)
 	}
 
 	if slices.Contains(viper.GetStringSlice("sync.sync_action"), "end") {
 		slice := []database.Day{*day}
 		err = tt.Sync(&slice)
 	}
-	return nil
+	return day, nil
 }
 
 func (tt *TimeTracker) Sync(days *[]database.Day) error {
