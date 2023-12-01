@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -149,12 +150,15 @@ func (d *Database) GetDay(datetime time.Time, company Company) (*Day, error) {
 	date := datetime.Format("2006-01-02")
 	rows, err := d.db.Query("SELECT company, start_time, end_time FROM days WHERE company = ? AND date = ?", company.Name, date)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer rows.Close()
 
 	var day Day
+	dayFound := false
+
 	for rows.Next() {
+		dayFound = true
 		var startTime, endTime string
 		err := rows.Scan(&day.Company.Name, &startTime, &endTime)
 		if err != nil {
@@ -185,6 +189,10 @@ func (d *Database) GetDay(datetime time.Time, company Company) (*Day, error) {
 	err = rows.Err()
 	if err != nil {
 		return nil, err
+	}
+
+	if !dayFound {
+		return nil, fmt.Errorf("%s wasn't recorded", datetime.Format("2006-01-02"))
 	}
 
 	return &day, nil

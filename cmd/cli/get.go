@@ -93,7 +93,11 @@ punch get day 01-01`,
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		slice := getRelevatDays()
+		slice, err := getRelevatDays()
+		if err != nil {
+			log.Fatalf("%v", err)
+			os.Exit(1)
+		}
 		content := generateView(slice)
 		fmt.Print(content)
 	},
@@ -140,14 +144,13 @@ func validateYear(year string) error {
 	return nil
 }
 
-func getRelevatDays() *[]database.Day {
+func getRelevatDays() (*[]database.Day, error) {
 	var slice []database.Day
 
 	if *reportTimeframe == REPORT_TIMEFRAME_DAY {
 		day, err := timeTracker.GetDay(time.Now(), company)
 		if err != nil {
-			log.Fatalf("%v", err)
-			os.Exit(1)
+			return nil, err
 		}
 		slice = []database.Day{*day}
 	} else {
@@ -164,7 +167,7 @@ func getRelevatDays() *[]database.Day {
 			}
 		}
 	}
-	return &slice
+	return &slice, nil
 }
 
 func generateView(slice *[]database.Day) string {
