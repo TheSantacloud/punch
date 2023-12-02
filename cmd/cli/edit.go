@@ -81,6 +81,7 @@ var editDayCmd = &cobra.Command{
 			log.Fatalf("%v", err)
 		}
 		timeTracker.Sync(slice)
+		fmt.Printf("Updated %d day(s)\n", len(*slice))
 	},
 }
 

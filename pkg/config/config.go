@@ -34,6 +34,7 @@ type SpreadsheetSettings struct {
 		StartTime string `mapstructure:"start_time" validate:"required"`
 		EndTime   string `mapstructure:"end_time" validate:"required"`
 		TotalTime string `mapstructure:"total_time" validate:"required"`
+		Note      string `validate:"required"`
 	} `validate:"required"`
 }
 

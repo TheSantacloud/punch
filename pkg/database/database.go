@@ -150,7 +150,7 @@ func (d *Database) InsertNewDay(day Day) error {
 	if day.End != nil {
 		endTime = day.End.Format("15:04:05")
 	}
-	_, err := d.db.Exec("INSERT INTO days VALUES (?, ?, ?, ?)", day.Company.Name, date, startTime, endTime)
+	_, err := d.db.Exec("INSERT INTO days VALUES (?, ?, ?, ?, ?)", day.Company.Name, date, startTime, endTime, day.Note)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (d *Database) InsertNewDay(day Day) error {
 
 func (d *Database) GetDay(datetime time.Time, company Company) (*Day, error) {
 	date := datetime.Format("2006-01-02")
-	rows, err := d.db.Query("SELECT company, start_time, end_time FROM days WHERE company = ? AND date = ?", company.Name, date)
+	rows, err := d.db.Query("SELECT company, start_time, end_time, note FROM days WHERE company = ? AND date = ?", company.Name, date)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,8 @@ func (d *Database) GetDay(datetime time.Time, company Company) (*Day, error) {
 	for rows.Next() {
 		dayFound = true
 		var startTime, endTime string
-		err := rows.Scan(&day.Company.Name, &startTime, &endTime)
+		var note sql.NullString
+		err := rows.Scan(&day.Company.Name, &startTime, &endTime, &note)
 		if err != nil {
 			return nil, err
 		}
@@ -197,6 +198,9 @@ func (d *Database) GetDay(datetime time.Time, company Company) (*Day, error) {
 			return nil, err
 		}
 		day.Company = *company
+		if note.Valid {
+			day.Note = note.String
+		}
 	}
 	err = rows.Err()
 	if err != nil {
@@ -220,7 +224,7 @@ func (d *Database) UpdateDay(day Day) error {
 	if day.End != nil {
 		endTime = day.End.Format("15:04:05")
 	}
-	_, err := d.db.Exec("UPDATE days SET start_time = ?, end_time = ? WHERE company = ? AND date = ?", startTime, endTime, day.Company.Name, date)
+	_, err := d.db.Exec("UPDATE days SET start_time = ?, end_time = ?, note = ? WHERE company = ? AND date = ?", startTime, endTime, day.Note, day.Company.Name, date)
 	if err != nil {
 		return err
 	}
@@ -229,7 +233,7 @@ func (d *Database) UpdateDay(day Day) error {
 }
 
 func (d *Database) GetAllDays(company Company) (*[]Day, error) {
-	rows, err := d.db.Query("SELECT date, start_time, end_time FROM days WHERE company = ? ORDER BY date DESC", company.Name)
+	rows, err := d.db.Query("SELECT date, start_time, end_time, note FROM days WHERE company = ? ORDER BY date DESC", company.Name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -239,7 +243,8 @@ func (d *Database) GetAllDays(company Company) (*[]Day, error) {
 	for rows.Next() {
 		var day Day
 		var date, startTime, endTime string
-		err := rows.Scan(&date, &startTime, &endTime)
+		var note sql.NullString
+		err := rows.Scan(&date, &startTime, &endTime, &note)
 		if err != nil {
 			return nil, err
 		}
@@ -264,6 +269,9 @@ func (d *Database) GetAllDays(company Company) (*[]Day, error) {
 			return nil, err
 		}
 		day.Company = *company
+		if note.Valid {
+			day.Note = note.String
+		}
 		days = append(days, day)
 	}
 	err = rows.Err()
@@ -286,6 +294,7 @@ func (d *Database) Init() {
         date TEXT NOT NULL, 
         start_time TEXT NOT NULL,
         end_time TEXT,
+        note TEXT,
         PRIMARY KEY (company, date),
         FOREIGN KEY (company) REFERENCES companies(name)
     );

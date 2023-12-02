@@ -27,6 +27,7 @@ type Sheet struct {
 		StartTime string
 		EndTime   string
 		TotalTime string
+		Note      string
 	}
 }
 
@@ -46,6 +47,7 @@ var (
 	startTimeColumnIndex int
 	endTimeColumnIndex   int
 	totalTimeColumnIndex int
+	noteColumnIndex      int
 )
 
 func GetSheet(cfg config.SpreadsheetSettings) (*Sheet, error) {
@@ -72,12 +74,14 @@ func GetSheet(cfg config.SpreadsheetSettings) (*Sheet, error) {
 			StartTime string
 			EndTime   string
 			TotalTime string
+			Note      string
 		}{
 			Company:   cfg.Columns.Company,
 			Date:      cfg.Columns.Date,
 			StartTime: cfg.Columns.StartTime,
 			EndTime:   cfg.Columns.EndTime,
 			TotalTime: cfg.Columns.TotalTime,
+			Note:      cfg.Columns.Note,
 		},
 	}
 	return &sheet, nil
@@ -126,7 +130,7 @@ func (s *Sheet) insertDay(day database.Day) error {
 
 func (s *Sheet) dayToRow(day database.Day) []interface{} {
 	maxIdx := max(companyColumnIndex, dateColumnIndex, startTimeColumnIndex,
-		endTimeColumnIndex, totalTimeColumnIndex) + 1
+		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
 	row := make([]interface{}, maxIdx)
 	for i := range row {
 		switch i {
@@ -140,6 +144,8 @@ func (s *Sheet) dayToRow(day database.Day) []interface{} {
 			row[endTimeColumnIndex] = day.End.Format("15:04:05")
 		case totalTimeColumnIndex:
 			row[totalTimeColumnIndex] = day.Duration()
+		case noteColumnIndex:
+			row[noteColumnIndex] = day.Note
 		default:
 			row[i] = ""
 		}
@@ -204,6 +210,8 @@ func (s *Sheet) parseHeaders(row []interface{}) {
 			endTimeColumnIndex = i
 		case s.Columns.TotalTime:
 			totalTimeColumnIndex = i
+		case s.Columns.Note:
+			noteColumnIndex = i
 		}
 	}
 }
@@ -227,10 +235,18 @@ func (s *Sheet) parseDayFromRow(row []interface{}) (*database.Day, error) {
 	endTimestamp := row[endTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
 	endTime, _ = time.Parse("15:04:05 02/01/2006", endTimestamp)
 
+	var note string
+	if len(row) > noteColumnIndex {
+		note = row[noteColumnIndex].(string)
+	} else {
+		note = ""
+	}
+
 	day := database.Day{
 		Company: database.Company{Name: row[companyColumnIndex].(string)},
 		Start:   &startTime,
 		End:     &endTime,
+		Note:    note,
 	}
 	return &day, nil
 }

@@ -16,5 +16,9 @@ func main() {
 		log.Fatalf("Unable to retrieve config: %v", err)
 		os.Exit(1)
 	}
-	cli.Execute(cfg)
+	err = cli.Execute(cfg)
+	if err != nil {
+		log.Fatalf("Unable to execute command: %v", err)
+		os.Exit(1)
+	}
 }
