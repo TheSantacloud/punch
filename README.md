@@ -4,10 +4,9 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] implement the time filters for `add` as well
 - [ ] add comment for a workday (-m)
 - [ ] add named remotes with types (only with sheets available)
-- [ ] change sync to push/pull
+- [ ] change sync to push/pull remotes
 - [ ] support multi work periods within one day
 - [ ] toggleable sync on edit via config
 - [ ] support report on all companies

@@ -13,7 +13,8 @@ var (
 )
 
 var addCmd = &cobra.Command{
-	Use: "add [type]",
+	Use:   "add [type]",
+	Short: "add a new resource",
 }
 
 var addCompanyCmd = &cobra.Command{
