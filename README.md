@@ -4,14 +4,18 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] create a change-buffer for the sync (sort of like a commit/push)
+- [ ] edit company
 - [ ] implement the time filters for `add` as well
 - [ ] add comment for a workday (-m)
+- [ ] add named remotes with types (only with sheets available)
+- [ ] change sync to push/pull
 - [ ] support multi work periods within one day
 - [ ] toggleable sync on edit via config
 - [ ] support report on all companies
 - [ ] delete day (via delete and via edit)
+- [ ] add tests
 - [ ] write a complete readme with guides
+- [ ] add github actions
 - [X] currency per company rather than general
 - [X] make week month and year string flags with default values of current
 - [X] add monthly/weekly report by company/all
