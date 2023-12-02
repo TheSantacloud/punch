@@ -2,16 +2,15 @@ package cli
 
 import (
 	"os"
+	"os/exec"
 
-	"fmt"
-
-	"log"
 	"time"
 
 	"github.com/dormunis/punch/pkg/config"
 	"github.com/dormunis/punch/pkg/database"
 	"github.com/dormunis/punch/pkg/timetracker"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -44,79 +43,27 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-var startCmd = &cobra.Command{
-	Use:   "start [time]",
-	Short: "Starts a new work day",
-	Args:  cobra.MaximumNArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(companyName)
-	},
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "open configuration file with your default editor",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		timestamp, err := getParsedTimeFromArgs(args)
+		editor := viper.GetString("settings.editor")
+		configFilePath := viper.ConfigFileUsed()
+		command := exec.Command(editor, configFilePath)
+		command.Stdin = os.Stdin
+		command.Stdout = os.Stdout
+		err := command.Run()
 		if err != nil {
 			return err
 		}
-
-		day, err := timeTracker.StartDay(*company, timestamp, message)
-		if err != nil {
-			return err
-		}
-		printBOD(day)
 		return nil
 	},
-}
-
-var endCmd = &cobra.Command{
-	Use:   "end [time]",
-	Short: "End a work day",
-	Args:  cobra.MaximumNArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(companyName)
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		timestamp, err := getParsedTimeFromArgs(args)
-		if err != nil {
-			return err
-		}
-
-		day, err := timeTracker.EndDay(*company, timestamp, message)
-		if err != nil {
-			return err
-		}
-		printEOD(day)
-		return nil
-	},
-}
-
-func printBOD(day *database.Day) {
-	fmt.Printf("Clocked in at %s\n", day.Start.Format("15:04:05"))
-}
-
-func printEOD(day *database.Day) {
-	earnings, err := day.Earnings()
-	duration := day.End.Sub(*day.Start)
-	if err != nil {
-		log.Fatalf("%v", err)
-		os.Exit(1)
-	}
-	fmt.Printf("Clocked out at %s after %s (%.2f %s)\n",
-		day.Start.Format("15:04:05"),
-		duration,
-		earnings,
-		day.Company.Currency)
 }
 
 func init() {
 	rootCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-	startCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-	endCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-
 	rootCmd.Flags().StringVarP(&message, "message", "m", "", "Comment or message")
-	startCmd.Flags().StringVarP(&message, "message", "m", "", "Comment or message")
-	endCmd.Flags().StringVarP(&message, "message", "m", "", "Comment or message")
-
-	rootCmd.AddCommand(startCmd)
-	rootCmd.AddCommand(endCmd)
+	rootCmd.AddCommand(configCmd)
 }
 
 func Execute(cfg *config.Config) error {

@@ -7,10 +7,10 @@ A simple CLI punchcard application
 - [ ] change sync to push/pull remotes
 - [ ] add named remotes with types (only with sheets available)
 - [ ] support multi work periods within one day
+- [ ] refactor `Database` completely. it's horrible. make it a repository
 - [ ] toggleable sync on edit via config
 - [ ] support report on all companies
 - [ ] delete day (via delete and via edit)
-- [ ] refactor database.go completely. it's horrible. make it repo
 - [ ] add tests
 - [ ] write a complete readme with guides
 - [ ] add github actions
