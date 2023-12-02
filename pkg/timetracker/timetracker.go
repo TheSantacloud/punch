@@ -148,3 +148,17 @@ func (tt *TimeTracker) AddCompany(name string, pph int32) error {
 	}
 	return nil
 }
+
+func (tt *TimeTracker) UpdateCompany(newCompany *database.Company, oldCompany *database.Company) error {
+	if newCompany.Name != oldCompany.Name {
+		err := tt.db.RenameCompany(*newCompany, oldCompany.Name)
+		if err != nil {
+			return fmt.Errorf("Unable to rename company: %v", err)
+		}
+	}
+	err := tt.db.UpdateCompany(*newCompany)
+	if err != nil {
+		return fmt.Errorf("Unable to update company: %v", err)
+	}
+	return nil
+}

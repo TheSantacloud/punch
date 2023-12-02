@@ -122,10 +122,22 @@ func (d *Database) GetAllCompanies() (*[]Company, error) {
 	return &companies, nil
 }
 
-func (d *Database) UpdateCompany(company Company) error {
-	_, err := d.db.Exec("UPDATE companies SET pph = ? WHERE name = ?", company.PPH, company.Name)
+func (d *Database) RenameCompany(company Company, newName string) error {
+	_, err := d.db.Exec("UPDATE companies SET name = ? WHERE name = ?", company.Name, newName)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func (d *Database) UpdateCompany(company Company) error {
+	_, err := d.db.Exec(`UPDATE companies 
+        SET pph = ?, 
+            currency = ? 
+        WHERE name = ?`,
+		company.PPH, company.Currency, company.Name)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -264,11 +276,49 @@ func (d *Database) GetAllDays(company Company) (*[]Day, error) {
 
 func (d *Database) Init() {
 	sqlStmt := `
-    CREATE TABLE IF NOT EXISTS companies (name TEXT NOT NULL PRIMARY KEY, pph INTEGER NOT NULL, currency TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS days (company TEXT NOT NULL, date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, PRIMARY KEY (company, date), FOREIGN KEY (company) REFERENCES companies(name));
+    CREATE TABLE IF NOT EXISTS companies (
+        name TEXT NOT NULL PRIMARY KEY,
+        pph INTEGER NOT NULL,
+         currency TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS days (
+        company TEXT NOT NULL, 
+        date TEXT NOT NULL, 
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        PRIMARY KEY (company, date),
+        FOREIGN KEY (company) REFERENCES companies(name)
+    );
     `
 	_, err := d.db.Exec(sqlStmt)
 	if err != nil {
 		log.Fatalf("%q: %s\n", err, sqlStmt)
 	}
+
+}
+
+func (d *Database) addTriggerIfNotExists() error {
+	triggerCheckSQL := "SELECT name FROM sqlite_master WHERE type='trigger' AND name='update_days_after_companies';"
+
+	var name string
+	err := d.db.QueryRow(triggerCheckSQL).Scan(&name)
+	if err == sql.ErrNoRows {
+		createTriggerSQL := `
+            CREATE TRIGGER update_days_after_companies
+                AFTER UPDATE OF name ON companies
+                FOR EACH ROW
+                BEGIN
+                    UPDATE days
+                    SET company = NEW.name
+                    WHERE company = OLD.name;
+                END;
+        `
+		_, err := d.db.Exec(createTriggerSQL)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

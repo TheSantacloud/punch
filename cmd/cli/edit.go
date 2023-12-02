@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dormunis/punch/pkg/database"
@@ -20,6 +21,34 @@ var editCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
+	},
+}
+
+var editCompanyCmd = &cobra.Command{
+	Use:     "company [name]",
+	Aliases: []string{"companies"},
+	Short:   "edit a specific company",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		company, err := timeTracker.GetCompany(args[0])
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		buf, err := company.Serialize()
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		err = editor.InteractiveEdit(buf, "yaml")
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		var updateCompany database.Company
+		err = database.DeserializeCompanyFromYAML(buf, &updateCompany)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		timeTracker.UpdateCompany(&updateCompany, company)
+		fmt.Printf("Updated company %s\n", updateCompany.Name)
 	},
 }
 
@@ -77,6 +106,7 @@ func editSlice(days *[]database.Day) error {
 func init() {
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editDayCmd)
+	editCmd.AddCommand(editCompanyCmd)
 	editDayCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
 	editDayCmd.Flags().BoolVarP(&allCompanies, "all", "a", false, "Edit all companies")
 }

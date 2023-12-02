@@ -4,7 +4,6 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] edit company
 - [ ] implement the time filters for `add` as well
 - [ ] add comment for a workday (-m)
 - [ ] add named remotes with types (only with sheets available)
@@ -16,6 +15,7 @@ A simple CLI punchcard application
 - [ ] add tests
 - [ ] write a complete readme with guides
 - [ ] add github actions
+- [X] edit company
 - [X] currency per company rather than general
 - [X] make week month and year string flags with default values of current
 - [X] add monthly/weekly report by company/all

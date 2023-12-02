@@ -64,8 +64,8 @@ func GetSheet(cfg config.SpreadsheetSettings) (*Sheet, error) {
 
 	sheet := Sheet{
 		Service:       srv,
-		SpreadsheetId: "1mkK5xy5YN_Jp8P_lACic6ZT4bGvSrbY6TsVp3Vlg1CQ",
-		SheetName:     "test",
+		SpreadsheetId: cfg.ID,
+		SheetName:     cfg.Sheet,
 		Columns: struct {
 			Company   string
 			Date      string
