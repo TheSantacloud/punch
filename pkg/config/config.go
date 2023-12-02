@@ -20,7 +20,7 @@ type Config struct {
 	}
 	Sync struct {
 		Engine      string               `validate:"omitempty,oneof=spreadsheet"`
-		SyncActions []string             `mapstructure:"sync_actions" validate:"omitempty,dive,oneof=start end"`
+		AutoSync    []string             `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end"`
 		SpreadSheet *SpreadsheetSettings `validate:"omitempty"`
 	}
 }
