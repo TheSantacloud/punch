@@ -8,6 +8,28 @@ import (
 	"github.com/spf13/viper"
 )
 
+type intermidiateRemoteConfig struct {
+	Type string `validate:"required"`
+}
+
+type IntermediateConfig struct {
+	Database struct {
+		Engine string `validate:"required,engine"`
+		Path   string `validate:"required"`
+	}
+	Settings struct {
+		Currency       string `validate:"required"`
+		Editor         string `validate:"required"`
+		DefaultCompany string `mapstructure:"default_company"`
+	}
+	Sync struct {
+		Engine      string               `validate:"omitempty,oneof=spreadsheet"`
+		AutoSync    []string             `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end"`
+		SpreadSheet *SpreadsheetSettings `validate:"omitempty"`
+	}
+	Remotes map[string]intermidiateRemoteConfig `validate:"omitempty,dive"`
+}
+
 type Config struct {
 	Database struct {
 		Engine string `validate:"required,engine"`
@@ -23,19 +45,34 @@ type Config struct {
 		AutoSync    []string             `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end"`
 		SpreadSheet *SpreadsheetSettings `validate:"omitempty"`
 	}
+	Remotes map[string]Remote `validate:"omitempty,dive"`
+}
+
+type Remote interface {
+	Validate() error
+	Type() string
 }
 
 type SpreadsheetSettings struct {
-	ID      string `validate:"required"`
-	Sheet   string `validate:"required"`
+	ID      string `mapstructure:"spreadsheet_id" validate:"required"`
+	Sheet   string `mapstructure:"sheet_name" validate:"required"`
 	Columns struct {
 		Company   string `validate:"required"`
 		Date      string `validate:"required"`
 		StartTime string `mapstructure:"start_time" validate:"required"`
 		EndTime   string `mapstructure:"end_time" validate:"required"`
 		TotalTime string `mapstructure:"total_time" validate:"required"`
-		Note      string `validate:"required"`
+		Note      string `validate:"required"` // TODO: make this optional
 	} `validate:"required"`
+}
+
+func (s *SpreadsheetSettings) Validate() error {
+	validate := validator.New()
+	return validate.Struct(s)
+}
+
+func (s *SpreadsheetSettings) Type() string {
+	return "spreadsheet"
 }
 
 func InitConfig() (*Config, error) {
@@ -91,10 +128,29 @@ func setupDefaultConfig() error {
 }
 
 func loadConfig() (*Config, error) {
-	var conf Config
-	if err := viper.Unmarshal(&conf); err != nil {
+	var ic IntermediateConfig
+	if err := viper.Unmarshal(&ic); err != nil {
 		return nil, err
 	}
+
+	conf := Config{
+		Database: ic.Database,
+		Settings: ic.Settings,
+		Sync:     ic.Sync,
+		Remotes:  make(map[string]Remote),
+	}
+
+	for key, value := range ic.Remotes {
+		switch value.Type {
+		case "spreadsheet":
+			var spreadsheetRemote SpreadsheetSettings
+			if err := viper.UnmarshalKey("remotes."+key, &spreadsheetRemote); err != nil {
+				return nil, err
+			}
+			conf.Remotes[key] = &spreadsheetRemote
+		}
+	}
+
 	return &conf, nil
 }
 

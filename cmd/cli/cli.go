@@ -19,6 +19,7 @@ var (
 	company     *database.Company
 	verbose     bool
 	message     string
+	Config      *config.Config
 )
 
 var rootCmd = &cobra.Command{
