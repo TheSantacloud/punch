@@ -9,14 +9,12 @@ import (
 
 	"github.com/dormunis/punch/pkg/config"
 	"github.com/dormunis/punch/pkg/database"
-	"github.com/dormunis/punch/pkg/sheetsync"
 
 	"github.com/spf13/viper"
 )
 
 type TimeTracker struct {
-	sheet *sheetsync.Sheet
-	db    *database.Database
+	db *database.Database
 }
 
 func NewTimeTracker(cfg *config.Config) (*TimeTracker, error) {
@@ -24,12 +22,8 @@ func NewTimeTracker(cfg *config.Config) (*TimeTracker, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to database: %v", err)
 	}
-
-	sheet, err := sheetsync.GetSheet(*cfg.Sync.SpreadSheet)
-
 	tt := TimeTracker{
-		sheet: sheet,
-		db:    db,
+		db: db,
 	}
 	return &tt, nil
 }
@@ -111,19 +105,9 @@ func (tt *TimeTracker) EndDay(company database.Company, timestamp time.Time, not
 }
 
 func (tt *TimeTracker) Sync(days *[]database.Day) error {
-	var records []sheetsync.Record
-	err := tt.sheet.ParseSheet(&records)
-	if err != nil {
-		return err
-	}
-
 	// TODO: do this in bulk/async?
 	for _, day := range *days {
 		tt.db.UpdateDay(day)
-		err = tt.sheet.UpsertDay(day, &records)
-		if err != nil {
-			return fmt.Errorf("Unable to sync day: %v", err)
-		}
 	}
 
 	return nil

@@ -1,62 +1,41 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 )
 
-type intermidiateRemoteConfig struct {
-	Type string `validate:"required"`
-}
-
-type IntermediateConfig struct {
-	Database struct {
-		Engine string `validate:"required,engine"`
-		Path   string `validate:"required"`
-	}
-	Settings struct {
-		Currency       string `validate:"required"`
-		Editor         string `validate:"required"`
-		DefaultCompany string `mapstructure:"default_company"`
-	}
-	Sync struct {
-		Engine      string               `validate:"omitempty,oneof=spreadsheet"`
-		AutoSync    []string             `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end"`
-		SpreadSheet *SpreadsheetSettings `validate:"omitempty"`
-	}
-	Remotes map[string]intermidiateRemoteConfig `validate:"omitempty,dive"`
-}
-
 type Config struct {
-	Database struct {
-		Engine string `validate:"required,engine"`
-		Path   string `validate:"required"`
-	}
-	Settings struct {
-		Currency       string `validate:"required"`
-		Editor         string `validate:"required"`
-		DefaultCompany string `mapstructure:"default_company"`
-	}
-	Sync struct {
-		Engine      string               `validate:"omitempty,oneof=spreadsheet"`
-		AutoSync    []string             `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end"`
-		SpreadSheet *SpreadsheetSettings `validate:"omitempty"`
-	}
-	Remotes map[string]Remote `validate:"omitempty,dive"`
+	Settings Settings
+	Database Database
+	Remotes  map[string]Remote
+}
+
+type Settings struct {
+	Currency       string   `validate:"required"`
+	Editor         string   `validate:"required"`
+	DefaultCompany string   `mapstructure:"default_company"`
+	DefaultRemote  string   `mapstructure:"default_remote"`
+	AutoSync       []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit"`
+}
+
+type Database struct {
+	Engine string `validate:"required,oneof=sqlite3"`
+	Path   string `validate:"required"`
 }
 
 type Remote interface {
-	Validate() error
 	Type() string
+	String() string
 }
 
-type SpreadsheetSettings struct {
-	ID      string `mapstructure:"spreadsheet_id" validate:"required"`
-	Sheet   string `mapstructure:"sheet_name" validate:"required"`
-	Columns struct {
+type SpreadsheetRemote struct {
+	ID        string `mapstructure:"spreadsheet_id" validate:"required"`
+	SheetName string `mapstructure:"sheet_name" validate:"required"`
+	Columns   struct {
 		Company   string `validate:"required"`
 		Date      string `validate:"required"`
 		StartTime string `mapstructure:"start_time" validate:"required"`
@@ -66,13 +45,12 @@ type SpreadsheetSettings struct {
 	} `validate:"required"`
 }
 
-func (s *SpreadsheetSettings) Validate() error {
-	validate := validator.New()
-	return validate.Struct(s)
+func (s *SpreadsheetRemote) Type() string {
+	return "spreadsheet"
 }
 
-func (s *SpreadsheetSettings) Type() string {
-	return "spreadsheet"
+func (s *SpreadsheetRemote) String() string {
+	return fmt.Sprintf("[%s] (%s)", s.Type(), s.ID)
 }
 
 func InitConfig() (*Config, error) {
@@ -82,10 +60,6 @@ func InitConfig() (*Config, error) {
 
 	conf, err := loadConfig()
 	if err != nil {
-		return nil, err
-	}
-
-	if err := validateConfig(conf); err != nil {
 		return nil, err
 	}
 
@@ -128,39 +102,50 @@ func setupDefaultConfig() error {
 }
 
 func loadConfig() (*Config, error) {
-	var ic IntermediateConfig
-	if err := viper.Unmarshal(&ic); err != nil {
+	var intermediateConfig struct {
+		Settings Settings
+		Database Database
+		Remotes  map[string]interface{}
+	}
+	if err := viper.Unmarshal(&intermediateConfig); err != nil {
 		return nil, err
 	}
 
-	conf := Config{
-		Database: ic.Database,
-		Settings: ic.Settings,
-		Sync:     ic.Sync,
+	conf := &Config{
+		Settings: intermediateConfig.Settings,
+		Database: intermediateConfig.Database,
 		Remotes:  make(map[string]Remote),
 	}
 
-	for key, value := range ic.Remotes {
-		switch value.Type {
+	if err := unmarshalRemotes(viper.GetStringMap("remotes"), conf); err != nil {
+		return nil, err
+	}
+
+	return conf, nil
+}
+
+func unmarshalRemotes(remoteMap map[string]interface{}, conf *Config) error {
+	conf.Remotes = make(map[string]Remote)
+
+	for key, value := range remoteMap {
+		remoteConfig := value.(map[string]interface{})
+
+		remoteType, ok := remoteConfig["type"].(string)
+		if !ok {
+			return fmt.Errorf("remote '%s' missing type", key)
+		}
+
+		switch remoteType {
 		case "spreadsheet":
-			var spreadsheetRemote SpreadsheetSettings
-			if err := viper.UnmarshalKey("remotes."+key, &spreadsheetRemote); err != nil {
-				return nil, err
+			var remote SpreadsheetRemote
+			if err := viper.UnmarshalKey(fmt.Sprintf("remotes.%s", key), &remote); err != nil {
+				return err
 			}
-			conf.Remotes[key] = &spreadsheetRemote
+			conf.Remotes[key] = &remote
+		default:
+			return fmt.Errorf("unknown remote type '%s'", remoteType)
 		}
 	}
 
-	return &conf, nil
-}
-
-func validateConfig(conf *Config) error {
-	validate := validator.New()
-	validate.RegisterValidation("engine", validateEngine)
-	return validate.Struct(conf)
-}
-
-func validateEngine(fl validator.FieldLevel) bool {
-	engine := fl.Field().String()
-	return engine == "sqlite3"
+	return nil
 }

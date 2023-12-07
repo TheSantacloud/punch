@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 
-	"github.com/dormunis/punch/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +16,13 @@ var pushCmd = &cobra.Command{
 }
 
 var remoteCmd = &cobra.Command{
-	Use:   "remote",
-	Short: "manage remote servers",
+	Use:     "remote",
+	Aliases: []string{"remotes"},
+	Short:   "manage remote servers",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for k, v := range Config.Remotes {
 			if verbose {
-				fmt.Printf("%s (%s)\n", k, v.(config.Remote).Type())
+				fmt.Println(k, v)
 			} else {
 				fmt.Println(k)
 			}

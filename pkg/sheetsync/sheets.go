@@ -50,7 +50,7 @@ var (
 	noteColumnIndex      int
 )
 
-func GetSheet(cfg config.SpreadsheetSettings) (*Sheet, error) {
+func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
 	ctx := context.Background()
 
 	client, err := getClient(ctx)
@@ -67,7 +67,7 @@ func GetSheet(cfg config.SpreadsheetSettings) (*Sheet, error) {
 	sheet := Sheet{
 		Service:       srv,
 		SpreadsheetId: cfg.ID,
-		SheetName:     cfg.Sheet,
+		SheetName:     cfg.SheetName,
 		Columns: struct {
 			Company   string
 			Date      string

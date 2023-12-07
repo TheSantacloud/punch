@@ -69,6 +69,7 @@ func init() {
 
 func Execute(cfg *config.Config) error {
 	var err error
+	Config = cfg
 	timeTracker, err = timetracker.NewTimeTracker(cfg)
 	if err != nil {
 		return err
