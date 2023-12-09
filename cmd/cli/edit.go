@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dormunis/punch/pkg/database"
 	"github.com/dormunis/punch/pkg/editor"
+	"github.com/dormunis/punch/pkg/models"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ var editCmd = &cobra.Command{
 	Use:   "edit [time]",
 	Short: "interactively edit work days",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		err := getCompanyIfExists(companyName)
+		err := getCompanyIfExists(currentCompanyName)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
@@ -30,7 +30,7 @@ var editCompanyCmd = &cobra.Command{
 	Short:   "edit a specific company",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		company, err := timeTracker.GetCompany(args[0])
+		company, err := CompanyRepository.GetByName(args[0])
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
@@ -42,12 +42,12 @@ var editCompanyCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
-		var updateCompany database.Company
-		err = database.DeserializeCompanyFromYAML(buf, &updateCompany)
+		var updateCompany models.Company
+		err = models.DeserializeCompanyFromYAML(buf, &updateCompany)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
-		timeTracker.UpdateCompany(&updateCompany, company)
+		CompanyRepository.Update(&updateCompany)
 		fmt.Printf("Updated company %s\n", updateCompany.Name)
 	},
 }
@@ -58,10 +58,10 @@ var editDayCmd = &cobra.Command{
 	Short:   "edit a specific day (default today)",
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var slice *[]database.Day
+		var slice *[]models.Day
 		var err error
 		if allCompanies {
-			slice, err = timeTracker.GetAllDays(company)
+			slice, err = DayRepository.GetAllDaysForAllCompanies()
 			if err != nil {
 				log.Fatalf("%v", err)
 			}
@@ -70,23 +70,23 @@ var editDayCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("%v", err)
 			}
-			day, err := timeTracker.GetDay(timestamp, company)
+			day, err := DayRepository.GetDayFromDateForCompany(timestamp, *currentCompany)
 			if err != nil {
 				log.Fatalf("%v", err)
 			}
-			slice = &[]database.Day{*day}
+			slice = &[]models.Day{*day}
 		}
 		err = editSlice(slice)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
-		timeTracker.Sync(slice)
+		Puncher.Sync(slice)
 		fmt.Printf("Updated %d day(s)\n", len(*slice))
 	},
 }
 
-func editSlice(days *[]database.Day) error {
-	buf, err := database.SerializeDaysToYAML(*days)
+func editSlice(days *[]models.Day) error {
+	buf, err := models.SerializeDaysToYAML(*days)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func editSlice(days *[]database.Day) error {
 		return err
 	}
 
-	err = database.DeserializeDaysFromYAML(buf, days)
+	err = models.DeserializeDaysFromYAML(buf, days)
 	if err != nil {
 		return err
 	}
@@ -108,6 +108,6 @@ func init() {
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editDayCmd)
 	editCmd.AddCommand(editCompanyCmd)
-	editDayCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
+	editDayCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
 	editDayCmd.Flags().BoolVarP(&allCompanies, "all", "a", false, "Edit all companies")
 }

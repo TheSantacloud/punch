@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dormunis/punch/pkg/database"
+	"github.com/dormunis/punch/pkg/models"
 	"github.com/spf13/cobra"
 )
 
@@ -40,22 +40,20 @@ var getCompanyCmd = &cobra.Command{
 	Use:     "company [name]",
 	Short:   "Get a company",
 	Aliases: []string{"companies"},
-	PreRun: func(cmd *cobra.Command, args []string) {
-		getCompanyIfExists(companyName)
-	},
+	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if company != nil {
-			company, err := timeTracker.GetCompany(company.Name)
+		if len(args) == 1 {
+			company, err := CompanyRepository.GetByName(args[0])
 			if err != nil {
 				log.Fatalf("Unable to get company: %v", err)
 			}
 			fmt.Println(company.String())
 		} else {
-			companies, err := timeTracker.GetAllCompanies()
+			companies, err := CompanyRepository.GetAll()
 			if err != nil {
 				log.Fatalf("Unable to get companies: %v", err)
 			}
-			for _, company := range *companies {
+			for _, company := range companies {
 				fmt.Println(company.String())
 			}
 		}
@@ -72,7 +70,7 @@ punch get day 2020-01-01
 punch get day 01-01`,
 	Aliases: []string{"days"},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		err := getCompanyIfExists(companyName)
+		err := getCompanyIfExists(currentCompanyName)
 		if err != nil {
 			// TODO: support all companies
 			log.Fatalf("Report on all companies not supported yet")
@@ -144,19 +142,19 @@ func validateYear(year string) error {
 	return nil
 }
 
-func getRelevatDays() (*[]database.Day, error) {
-	var slice []database.Day
+func getRelevatDays() (*[]models.Day, error) {
+	var slice []models.Day
 
 	if *reportTimeframe == REPORT_TIMEFRAME_DAY {
-		day, err := timeTracker.GetDay(time.Now(), company)
+		day, err := DayRepository.GetDayFromDateForCompany(time.Now(), *currentCompany)
 		if err != nil {
 			return nil, err
 		}
-		slice = []database.Day{*day}
+		slice = []models.Day{*day}
 	} else {
 		startDate := getStartDate()
 		endDate := getEndDate(startDate)
-		days, err := timeTracker.GetAllDays(company)
+		days, err := DayRepository.GetAllDaysForCompany(*currentCompany)
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
@@ -170,7 +168,7 @@ func getRelevatDays() (*[]database.Day, error) {
 	return &slice, nil
 }
 
-func generateView(slice *[]database.Day) string {
+func generateView(slice *[]models.Day) string {
 	if len(*slice) == 0 {
 		log.Fatalf("No available data")
 	}
@@ -201,16 +199,16 @@ func generateView(slice *[]database.Day) string {
 		}
 		content += fmt.Sprintf("%s\t%s\t%s\t%.2f %s\n",
 			prefix,
-			company.Name,
+			currentCompany.Name,
 			totalDuration,
 			totalEarnings,
-			company.Currency,
+			currentCompany.Currency,
 		)
 	case "csv":
 		if verbose {
-			buffer, err = database.SerializeDaysToFullCSV(*slice)
+			buffer, err = models.SerializeDaysToFullCSV(*slice)
 		} else {
-			buffer, err = database.SerializeDaysToCSV(*slice)
+			buffer, err = models.SerializeDaysToCSV(*slice)
 		}
 		if err != nil {
 			log.Fatalf("%v", err)
@@ -310,7 +308,7 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.AddCommand(getDayCmd)
 	getCmd.AddCommand(getCompanyCmd)
-	getDayCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
+	getDayCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
 	getDayCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	getDayCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for a specific week (format: YYYY-WW), leave empty for current week")
 	getDayCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")

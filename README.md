@@ -5,15 +5,15 @@ A simple CLI punchcard application
 ## TODO
 
 - [ ] support multi work periods within one day
-- [ ] add sync support on dedicated actions
+- [ ] add autosync support on dedicated actions
 - [ ] toggleable sync on edit via config
 - [ ] support report on all companies
 - [ ] delete day (via delete and via edit)
-- [ ] refactor `Database` completely. it's horrible. make it a repository
 - [ ] add tests
 - [ ] write a complete readme with guides
 - [ ] add github actions
 - [ ] spreadsheet init (setup)
+- [X] refactor `Database` completely. it's horrible. make it a repository
 - [X] add named remotes with types (only with sheets available)
 - [X] change sync to push/pull remotes
 - [X] add comment for a workday (-m)

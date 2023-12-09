@@ -15,8 +15,8 @@ type Config struct {
 }
 
 type Settings struct {
-	Currency       string   `validate:"required"`
-	Editor         string   `validate:"required"`
+	Editor         string
+	Currency       string   `mapstructure:"default_currency"`
 	DefaultCompany string   `mapstructure:"default_company"`
 	DefaultRemote  string   `mapstructure:"default_remote"`
 	AutoSync       []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit"`

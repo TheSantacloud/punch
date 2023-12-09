@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 )
 
 type Day struct {
+	ID      uint32
 	Company Company
 	Start   *time.Time
 	End     *time.Time
@@ -168,17 +169,18 @@ func SerializeDaysToCSV(days []Day) (*bytes.Buffer, error) {
 func SerializeDaysToFullCSV(days []Day) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString("company,date,start_time,end_time,hours,earnings,note\n")
+	buf.WriteString("company,date,start_time,end_time,hours,earnings,currency,note\n")
 	for _, day := range days {
 		earnings, _ := day.Earnings()
 
-		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%.2f,%s\n",
+		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%.2f,%s,%s\n",
 			day.Company.Name,
 			day.Start.Format("2006-01-02"),
 			day.Start.Format("15:04:05"),
 			day.End.Format("15:04:05"),
 			day.Duration(),
 			earnings,
+			day.Company.Currency,
 			day.Note,
 		))
 	}

@@ -72,16 +72,19 @@ func parseTime(input string) (time.Time, error) {
 
 func getCompanyIfExists(name string) error {
 	defaultCompany := viper.GetString("settings.default_company")
-	if defaultCompany != "" && companyName == "" {
-		companyName = defaultCompany
+	if defaultCompany != "" && currentCompanyName == "" {
+		currentCompanyName = defaultCompany
 	}
 	var err error
-	company, err = timeTracker.GetCompany(companyName)
+	currentCompany, err = CompanyRepository.SafeGetByName(currentCompanyName)
 	if err != nil {
 		return err
 	}
-	if company == nil {
-		return fmt.Errorf("Company `%s` does not exist", name)
+	if currentCompany == nil && currentCompanyName != defaultCompany {
+		return fmt.Errorf("Company `%s` does not exist", currentCompanyName)
+	} else if currentCompany == nil && currentCompanyName == defaultCompany {
+		return fmt.Errorf("Set `%s` as default company, but it doesn't exists",
+			currentCompanyName)
 	}
 	return nil
 }

@@ -2,10 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"log"
-	"os"
 
-	"github.com/dormunis/punch/pkg/database"
+	"github.com/dormunis/punch/pkg/models"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +12,7 @@ var startCmd = &cobra.Command{
 	Short: "Starts a new work day",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(companyName)
+		return getCompanyIfExists(currentCompanyName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		timestamp, err := getParsedTimeFromArgs(args)
@@ -22,7 +20,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		day, err := timeTracker.StartDay(*company, timestamp, message)
+		day, err := Puncher.StartDay(*currentCompany, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}
@@ -36,7 +34,7 @@ var endCmd = &cobra.Command{
 	Short: "End a work day",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(companyName)
+		return getCompanyIfExists(currentCompanyName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		timestamp, err := getParsedTimeFromArgs(args)
@@ -44,7 +42,7 @@ var endCmd = &cobra.Command{
 			return err
 		}
 
-		day, err := timeTracker.EndDay(*company, timestamp, message)
+		day, _ := Puncher.EndDay(*currentCompany, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}
@@ -53,29 +51,29 @@ var endCmd = &cobra.Command{
 	},
 }
 
-func printBOD(day *database.Day) {
+func printBOD(day *models.Day) {
 	fmt.Printf("Clocked in at %s\n", day.Start.Format("15:04:05"))
 }
 
-func printEOD(day *database.Day) {
+func printEOD(day *models.Day) error {
 	earnings, err := day.Earnings()
 	duration := day.End.Sub(*day.Start)
 	if err != nil {
-		log.Fatalf("%v", err)
-		os.Exit(1)
+		return err
 	}
 	fmt.Printf("Clocked out at %s after %s (%.2f %s)\n",
-		day.Start.Format("15:04:05"),
+		day.End.Format("15:04:05"),
 		duration,
 		earnings,
 		day.Company.Currency)
+	return nil
 }
 
 func init() {
-	startCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-	startCmd.Flags().StringVarP(&message, "message", "m", "", "Comment or message")
-	endCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-	endCmd.Flags().StringVarP(&message, "message", "m", "", "Comment or message")
+	startCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	startCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
+	endCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	endCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(endCmd)
 }

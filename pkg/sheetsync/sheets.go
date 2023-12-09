@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/dormunis/punch/pkg/config"
-	"github.com/dormunis/punch/pkg/database"
+	"github.com/dormunis/punch/pkg/models"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -32,11 +32,11 @@ type Sheet struct {
 }
 
 type Record struct {
-	Day database.Day
+	Day models.Day
 	Row int
 }
 
-func (r Record) Matches(day database.Day) bool {
+func (r Record) Matches(day models.Day) bool {
 	return r.Day.Start.Format("02/01/2006") == day.Start.Format("02/01/2006") &&
 		r.Day.Company.Name == day.Company.Name
 }
@@ -87,7 +87,7 @@ func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
 	return &sheet, nil
 }
 
-func (s *Sheet) UpsertDay(day database.Day, records *[]Record) error {
+func (s *Sheet) UpsertDay(day models.Day, records *[]Record) error {
 	for _, record := range *records {
 		if record.Day.Start == nil {
 			continue
@@ -99,7 +99,7 @@ func (s *Sheet) UpsertDay(day database.Day, records *[]Record) error {
 	return s.insertDay(day)
 }
 
-func (s *Sheet) updateDay(day database.Day, record Record) error {
+func (s *Sheet) updateDay(day models.Day, record Record) error {
 	if day.Start == nil || day.End == nil {
 		return fmt.Errorf("Day must be complete")
 	}
@@ -114,7 +114,7 @@ func (s *Sheet) updateDay(day database.Day, record Record) error {
 	return nil
 }
 
-func (s *Sheet) insertDay(day database.Day) error {
+func (s *Sheet) insertDay(day models.Day) error {
 	if day.Start == nil || day.End == nil {
 		return fmt.Errorf("Day must be complete")
 	}
@@ -128,7 +128,7 @@ func (s *Sheet) insertDay(day database.Day) error {
 	return nil
 }
 
-func (s *Sheet) dayToRow(day database.Day) []interface{} {
+func (s *Sheet) dayToRow(day models.Day) []interface{} {
 	maxIdx := max(companyColumnIndex, dateColumnIndex, startTimeColumnIndex,
 		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
 	row := make([]interface{}, maxIdx)
@@ -216,7 +216,7 @@ func (s *Sheet) parseHeaders(row []interface{}) {
 	}
 }
 
-func (s *Sheet) parseDayFromRow(row []interface{}) (*database.Day, error) {
+func (s *Sheet) parseDayFromRow(row []interface{}) (*models.Day, error) {
 	if len(row) < 3 {
 		return nil, fmt.Errorf("Invalid row")
 	}
@@ -242,8 +242,8 @@ func (s *Sheet) parseDayFromRow(row []interface{}) (*database.Day, error) {
 		note = ""
 	}
 
-	day := database.Day{
-		Company: database.Company{Name: row[companyColumnIndex].(string)},
+	day := models.Day{
+		Company: models.Company{Name: row[companyColumnIndex].(string)},
 		Start:   &startTime,
 		End:     &endTime,
 		Note:    note,

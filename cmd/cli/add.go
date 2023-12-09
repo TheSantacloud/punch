@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
+	"github.com/dormunis/punch/pkg/models"
+	"github.com/dormunis/punch/pkg/repositories"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -20,27 +22,38 @@ var addCmd = &cobra.Command{
 var addCompanyCmd = &cobra.Command{
 	Use:   "company [name] [price]",
 	Short: "add a company",
-	Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		if getCompanyIfExists(args[0]) == nil {
-			log.Fatalf("company %s already exists", args[0])
+	Long: `Add a company to the database. The price is the amount of money,  
+    in your set currency, that the company pays you per hour.`,
+	Args: cobra.ExactArgs(2),
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if currency == "" && Config.Settings.Currency == "" {
+			return fmt.Errorf("currency must be set")
+		} else if currency == "" && Config.Settings.Currency != "" {
+			currency = Config.Settings.Currency
 		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
 		price, err := strconv.ParseInt(args[1], 10, 32)
 		if err != nil || price <= 0 {
 			log.Fatalf("invalid price %s", args[1])
 		}
-		timeTracker.AddCompany(name, int32(price))
+		newCompany := models.Company{
+			Name:     name,
+			PPH:      uint16(price),
+			Currency: currency,
+		}
+		err = CompanyRepository.Insert(&newCompany)
+		if err != nil && err != repositories.ErrCompanyNotFound {
+			log.Fatalf("unable to insert company: %v", err)
+		}
 	},
 }
 
 func init() {
-	defaultCurrency := viper.GetString("settings.default_currency")
-	if defaultCurrency == "" {
-		defaultCurrency = "USD"
-	}
 	rootCmd.AddCommand(addCmd)
 	addCmd.AddCommand(addCompanyCmd)
-	addCompanyCmd.Flags().StringVar(&currency, "currency", defaultCurrency,
+	addCompanyCmd.Flags().StringVar(&currency, "currency", "",
 		"currency in which the company pays (defaults to USD)")
 }

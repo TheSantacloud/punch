@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 
 type Company struct {
 	Name     string `yaml:"name"`
-	PPH      int32  `yaml:"pph"`
+	PPH      uint16 `yaml:"pph"`
 	Currency string `yaml:"currency"`
 }
 

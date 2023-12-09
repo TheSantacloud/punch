@@ -18,7 +18,7 @@ func main() {
 	}
 	err = cli.Execute(cfg)
 	if err != nil {
-		log.Fatalf("Unable to execute command: %v", err)
+		log.Fatalf("%v", err)
 		os.Exit(1)
 	}
 }

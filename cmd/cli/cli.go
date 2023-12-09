@@ -1,40 +1,49 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
-	"time"
-
 	"github.com/dormunis/punch/pkg/config"
 	"github.com/dormunis/punch/pkg/database"
-	"github.com/dormunis/punch/pkg/timetracker"
+	"github.com/dormunis/punch/pkg/models"
+	"github.com/dormunis/punch/pkg/puncher"
+	"github.com/dormunis/punch/pkg/repositories"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// common instances
 var (
-	timeTracker *timetracker.TimeTracker
-	companyName string
-	company     *database.Company
-	verbose     bool
-	message     string
-	Config      *config.Config
+	Config            *config.Config
+	DayRepository     repositories.DayRepository
+	CompanyRepository repositories.CompanyRepository
+	Puncher           *puncher.Puncher
+)
+
+// cli flags
+var (
+	currentCompanyName string
+	currentCompany     *models.Company
+	punchMessage       string
+	verbose            bool
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "punch",
-	Short: "Punchcard program for freelancers",
+	Use:           "punch",
+	Short:         "Punchcard program for freelancers",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(companyName)
+		return getCompanyIfExists(currentCompanyName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := timeTracker.ToggleCheckInOut(company, message)
+		day, err := Puncher.ToggleCheckInOut(currentCompany, punchMessage)
 		if err != nil {
 			return err
 		}
 
-		day, err := timeTracker.GetDay(time.Now(), company)
 		if day.End != nil {
 			printEOD(day)
 		} else {
@@ -62,18 +71,23 @@ var configCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&companyName, "company", "c", "", "Specify the company name")
-	rootCmd.Flags().StringVarP(&message, "message", "m", "", "Comment or message")
+	rootCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	rootCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
 	rootCmd.AddCommand(configCmd)
 }
 
 func Execute(cfg *config.Config) error {
 	var err error
 	Config = cfg
-	timeTracker, err = timetracker.NewTimeTracker(cfg)
+
+	db, err := database.NewDatabase(cfg.Database.Engine, cfg.Database.Path)
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to connect to models. %v", err)
 	}
+
+	DayRepository = repositories.NewGORMDayRepository(db)
+	CompanyRepository = repositories.NewGORMCompanyRepository(db)
+	Puncher = puncher.NewPuncher(DayRepository)
 
 	err = rootCmd.Execute()
 	if err != nil {
