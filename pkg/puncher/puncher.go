@@ -28,15 +28,15 @@ func NewPuncher(repo repositories.DayRepository) *Puncher {
 
 func (p *Puncher) ToggleCheckInOut(company *models.Company, note string) (*models.Day, error) {
 	today := time.Now()
-	day, err := p.repo.GetDayFromDateForCompany(today, *company)
+	_, err := p.repo.GetDayFromDateForCompany(today, *company)
 	switch err {
 	case nil:
+		return p.EndDay(*company, today, note)
 	case repositories.ErrDayNotFound:
 		return p.StartDay(*company, today, note)
 	default:
 		return nil, err
 	}
-	return day, err
 }
 
 func (p *Puncher) StartDay(company models.Company, timestamp time.Time, note string) (*models.Day, error) {
