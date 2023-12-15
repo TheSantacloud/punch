@@ -8,7 +8,7 @@ import (
 
 var pushCmd = &cobra.Command{
 	Use:   "push [remote]",
-	Short: "pushes the current day to the remote server",
+	Short: "pushes the current session to the remote server",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return nil

@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Day struct {
+type Session struct {
 	ID      uint32
 	Company Company
 	Start   *time.Time
@@ -17,7 +17,7 @@ type Day struct {
 	Note    string
 }
 
-type EditableDay struct {
+type EditableSession struct {
 	Company   string `yaml:"company"`
 	Date      string `yaml:"date"`
 	StartTime string `yaml:"start_time"`
@@ -25,7 +25,7 @@ type EditableDay struct {
 	Note      string `yaml:"note"`
 }
 
-func (d Day) Summary() string {
+func (d Session) Summary() string {
 	earnings := "Earnings: N/A"
 	duration := "Duration: N/A"
 
@@ -39,9 +39,9 @@ func (d Day) Summary() string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s", date, d.Company.Name, duration, earnings)
 }
 
-func (d Day) Earnings() (float64, error) {
+func (d Session) Earnings() (float64, error) {
 	if d.Start == nil || d.End == nil {
-		return 0, fmt.Errorf("day not started or ended")
+		return 0, fmt.Errorf("Session not started or ended")
 	}
 	delta := d.End.Sub(*d.Start)
 	hours := delta.Hours()
@@ -49,7 +49,7 @@ func (d Day) Earnings() (float64, error) {
 	return value, nil
 }
 
-func (d Day) Duration() string {
+func (d Session) Duration() string {
 	if d.Start == nil || d.End == nil {
 		return "N/A"
 	}
@@ -62,13 +62,13 @@ func (d Day) Duration() string {
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
-func SerializeDaysToYAML(days []Day) (*bytes.Buffer, error) {
+func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString("# Change either the `start_time` or `end_time` fields to edit the day\n")
 	buf.WriteString("# The `company` and `date` fields are for reference only\n")
 	buf.WriteString("\n")
-	for _, day := range days {
+	for _, session := range sessions {
 		ed := struct {
 			Company   string `yaml:"company"`
 			Date      string `yaml:"date"`
@@ -76,11 +76,11 @@ func SerializeDaysToYAML(days []Day) (*bytes.Buffer, error) {
 			EndTime   string `yaml:"end_time"`
 			Note      string `yaml:"note"`
 		}{
-			Company:   day.Company.Name,
-			Date:      day.Start.Format("2006-01-02"),
-			StartTime: day.Start.Format("15:04:05"),
-			EndTime:   day.End.Format("15:04:05"),
-			Note:      day.Note,
+			Company:   session.Company.Name,
+			Date:      session.Start.Format("2006-01-02"),
+			StartTime: session.Start.Format("15:04:05"),
+			EndTime:   session.End.Format("15:04:05"),
+			Note:      session.Note,
 		}
 
 		data, err := yaml.Marshal(ed)
@@ -95,7 +95,7 @@ func SerializeDaysToYAML(days []Day) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-func DeserializeDaysFromYAML(buf *bytes.Buffer, days *[]Day) error {
+func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 	decoder := yaml.NewDecoder(buf)
 
 	for {
@@ -124,8 +124,8 @@ func DeserializeDaysFromYAML(buf *bytes.Buffer, days *[]Day) error {
 		}
 
 		updated := false
-		for i, day := range *days {
-			if day.Company.Name == ed.Company && day.Start.Format("2006-01-02") == ed.Date {
+		for i, session := range *sessions {
+			if session.Company.Name == ed.Company && session.Start.Format("2006-01-02") == ed.Date {
 				startTime, err := time.Parse("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date)
 				if err != nil {
 					return err
@@ -135,9 +135,9 @@ func DeserializeDaysFromYAML(buf *bytes.Buffer, days *[]Day) error {
 					return err
 				}
 
-				(*days)[i].Start = &startTime
-				(*days)[i].End = &endTime
-				(*days)[i].Note = ed.Note
+				(*sessions)[i].Start = &startTime
+				(*sessions)[i].End = &endTime
+				(*sessions)[i].Note = ed.Note
 				updated = true
 				break
 			}
@@ -151,37 +151,37 @@ func DeserializeDaysFromYAML(buf *bytes.Buffer, days *[]Day) error {
 	return nil
 }
 
-func SerializeDaysToCSV(days []Day) (*bytes.Buffer, error) {
+func SerializeSessionsToCSV(sessions []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString("company,date,duration\n")
-	for _, day := range days {
+	for _, session := range sessions {
 		buf.WriteString(fmt.Sprintf("%s,%s,%s\n",
-			day.Company.Name,
-			day.Start.Format("2006-01-02"),
-			day.Duration(),
+			session.Company.Name,
+			session.Start.Format("2006-01-02"),
+			session.Duration(),
 		))
 	}
 
 	return &buf, nil
 }
 
-func SerializeDaysToFullCSV(days []Day) (*bytes.Buffer, error) {
+func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString("company,date,start_time,end_time,hours,earnings,currency,note\n")
-	for _, day := range days {
-		earnings, _ := day.Earnings()
+	for _, session := range session {
+		earnings, _ := session.Earnings()
 
 		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%.2f,%s,%s\n",
-			day.Company.Name,
-			day.Start.Format("2006-01-02"),
-			day.Start.Format("15:04:05"),
-			day.End.Format("15:04:05"),
-			day.Duration(),
+			session.Company.Name,
+			session.Start.Format("2006-01-02"),
+			session.Start.Format("15:04:05"),
+			session.End.Format("15:04:05"),
+			session.Duration(),
 			earnings,
-			day.Company.Currency,
-			day.Note,
+			session.Company.Currency,
+			session.Note,
 		))
 	}
 

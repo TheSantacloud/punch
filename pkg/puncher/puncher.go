@@ -3,7 +3,6 @@ package puncher
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"time"
 
@@ -12,86 +11,88 @@ import (
 )
 
 var (
-	ErrDayAlreadyStarted = errors.New("Day already started")
-	ErrDayAlreadyEnded   = errors.New("Day already ended")
+	ErrSessionAlreadyStarted = errors.New("Session already started")
+	ErrSessionAlreadyEnded   = errors.New("Session already ended")
 )
 
 type Puncher struct {
-	repo repositories.DayRepository
+	repo repositories.SessionRepository
 }
 
-func NewPuncher(repo repositories.DayRepository) *Puncher {
+func NewPuncher(repo repositories.SessionRepository) *Puncher {
 	return &Puncher{
 		repo: repo,
 	}
 }
 
-func (p *Puncher) ToggleCheckInOut(company *models.Company, note string) (*models.Day, error) {
+func (p *Puncher) ToggleCheckInOut(company *models.Company, note string) (*models.Session, error) {
 	today := time.Now()
-	_, err := p.repo.GetDayFromDateForCompany(today, *company)
+	session, err := p.repo.GetLatestSessionOnSpecificDate(today, *company)
 	switch err {
 	case nil:
-		return p.EndDay(*company, today, note)
-	case repositories.ErrDayNotFound:
-		return p.StartDay(*company, today, note)
+		if session.End != nil {
+			return p.StartSession(*company, today, note)
+		} else {
+			return p.EndSession(*company, today, note)
+		}
+	case repositories.ErrSessionNotFound:
+		return p.StartSession(*company, today, note)
 	default:
 		return nil, err
 	}
 }
 
-func (p *Puncher) StartDay(company models.Company, timestamp time.Time, note string) (*models.Day, error) {
-	if _, err := p.repo.GetDayFromDateForCompany(timestamp, company); err != repositories.ErrDayNotFound {
-		return nil, ErrDayAlreadyStarted
+func (p *Puncher) StartSession(company models.Company, timestamp time.Time, note string) (*models.Session, error) {
+	fetchedSession, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, company)
+	if err != repositories.ErrSessionNotFound && fetchedSession.End == nil {
+		return nil, ErrSessionAlreadyStarted
 	}
-	day := models.Day{
+	session := models.Session{
 		Company: company,
 		Start:   &timestamp,
 		Note:    note,
 	}
-	err := p.repo.Insert(&day)
+	err = p.repo.Insert(&session)
 	if err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return nil, fmt.Errorf("Day already started; multiple starts not supported")
-		}
-		return nil, fmt.Errorf("Unable to insert day: %v", err)
+		return nil, fmt.Errorf("Unable to insert session: %v", err)
 	}
-	return &day, nil
+	return &session, nil
 }
 
-func (p *Puncher) EndDay(company models.Company, timestamp time.Time, note string) (*models.Day, error) {
-	day, err := p.repo.GetDayFromDateForCompany(timestamp, company)
+func (p *Puncher) EndSession(company models.Company, timestamp time.Time, note string) (*models.Session, error) {
+	session, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, company)
 	switch err {
 	case nil:
-		if day.End != nil {
-			return day, ErrDayAlreadyEnded
+		if session.End != nil {
+			return session, ErrSessionAlreadyEnded
 		}
-	case repositories.ErrDayNotFound:
-		return nil, ErrDayAlreadyEnded
+	case repositories.ErrSessionNotFound:
+		return nil, ErrSessionAlreadyEnded
 	default:
 		return nil, err
 	}
 
-	day.End = &timestamp
+	session.End = &timestamp
 
-	if day.Note != "" {
-		day.Note = day.Note + "; " + note
+	if session.Note != "" {
+		session.Note = session.Note + "; " + note
 	} else {
-		day.Note = note
+		session.Note = note
 	}
 
-	err = p.repo.Update(day)
+	err = p.repo.Update(session)
 	if err != nil {
 		return nil, err
 	}
 
-	return day, nil
+	return session, nil
 }
 
 // TODO: should this exist here?
-func (p *Puncher) Sync(days *[]models.Day) error {
+func (p *Puncher) Sync(sessions *[]models.Session) error {
 	// TODO: do this in bulk/async?
-	for _, day := range *days {
-		p.repo.Update(&day)
+	for _, session := range *sessions {
+		p.repo.Update(&session)
 	}
 
 	return nil

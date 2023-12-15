@@ -60,15 +60,15 @@ var getCompanyCmd = &cobra.Command{
 	},
 }
 
-var getDayCmd = &cobra.Command{
-	Use:   "day [date]",
-	Short: "Get a work day",
-	Long: `Get a work day. If no date is specified, the current day is used.
+var getSessionCmd = &cobra.Command{
+	Use:   "session [date]",
+	Short: "Get a work session",
+	Long: `Get a work session. If no date is specified, the latest of current day is used.
     If a date is specified, the format must be YYYY-MM-DD.`,
-	Example: `punch get day
-punch get day 2020-01-01
-punch get day 01-01`,
-	Aliases: []string{"days"},
+	Example: `punch get session 
+punch get session 2020-01-01
+punch get session  01-01`,
+	Aliases: []string{"sessions"},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		err := getCompanyIfExists(currentCompanyName)
 		if err != nil {
@@ -91,7 +91,7 @@ punch get day 01-01`,
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		slice, err := getRelevatDays()
+		slice, err := getRelevatSessions()
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
@@ -142,33 +142,33 @@ func validateYear(year string) error {
 	return nil
 }
 
-func getRelevatDays() (*[]models.Day, error) {
-	var slice []models.Day
+func getRelevatSessions() (*[]models.Session, error) {
+	var slice []models.Session
 
 	if *reportTimeframe == REPORT_TIMEFRAME_DAY {
-		day, err := DayRepository.GetDayFromDateForCompany(time.Now(), *currentCompany)
+		session, err := SessionRepository.GetLatestSessionOnSpecificDate(time.Now(), *currentCompany)
 		if err != nil {
 			return nil, err
 		}
-		slice = []models.Day{*day}
+		slice = []models.Session{*session}
 	} else {
 		startDate := getStartDate()
 		endDate := getEndDate(startDate)
-		days, err := DayRepository.GetAllDaysForCompany(*currentCompany)
+		sessions, err := SessionRepository.GetAllSessions(*currentCompany)
 		if err != nil {
 			log.Fatalf("%v", err)
 			os.Exit(1)
 		}
-		for _, day := range *days {
-			if day.Start.After(startDate) && day.End.Before(endDate) {
-				slice = append(slice, day)
+		for _, session := range *sessions {
+			if session.Start.After(startDate) && session.End.Before(endDate) {
+				slice = append(slice, session)
 			}
 		}
 	}
 	return &slice, nil
 }
 
-func generateView(slice *[]models.Day) string {
+func generateView(slice *[]models.Session) string {
 	if len(*slice) == 0 {
 		log.Fatalf("No available data")
 	}
@@ -182,13 +182,13 @@ func generateView(slice *[]models.Day) string {
 
 	switch output {
 	case "text":
-		for _, day := range *slice {
-			totalDuration += day.End.Sub(*day.Start)
-			earnings, _ := day.Earnings()
+		for _, session := range *slice {
+			totalDuration += session.End.Sub(*session.Start)
+			earnings, _ := session.Earnings()
 			totalEarnings += earnings
 
 			if verbose {
-				content += day.Summary()
+				content += session.Summary()
 				content += "\n"
 			}
 		}
@@ -206,9 +206,9 @@ func generateView(slice *[]models.Day) string {
 		)
 	case "csv":
 		if verbose {
-			buffer, err = models.SerializeDaysToFullCSV(*slice)
+			buffer, err = models.SerializeSessionsToFullCSV(*slice)
 		} else {
-			buffer, err = models.SerializeDaysToCSV(*slice)
+			buffer, err = models.SerializeSessionsToCSV(*slice)
 		}
 		if err != nil {
 			log.Fatalf("%v", err)
@@ -306,15 +306,15 @@ func preRunCheckOutput() error {
 func init() {
 	currentYear, currentMonth, _ := time.Now().Date()
 	rootCmd.AddCommand(getCmd)
-	getCmd.AddCommand(getDayCmd)
+	getCmd.AddCommand(getSessionCmd)
 	getCmd.AddCommand(getCompanyCmd)
-	getDayCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
-	getDayCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
-	getDayCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for a specific week (format: YYYY-WW), leave empty for current week")
-	getDayCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
-	getDayCmd.Flags().StringVar(&yearReport, "year", "", "Get report for a specific year (format: YYYY), leave empty for current year")
-	getDayCmd.Flags().BoolVar(&allReport, "all", false, "Get all days")
-	getDayCmd.Flags().StringVarP(&output, "output", "o", "text", "Specify the output format")
-	getDayCmd.Flags().Lookup("month").NoOptDefVal = strconv.Itoa(int(currentMonth))
-	getDayCmd.Flags().Lookup("year").NoOptDefVal = strconv.Itoa(currentYear)
+	getSessionCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	getSessionCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
+	getSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for a specific week (format: YYYY-WW), leave empty for current week")
+	getSessionCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
+	getSessionCmd.Flags().StringVar(&yearReport, "year", "", "Get report for a specific year (format: YYYY), leave empty for current year")
+	getSessionCmd.Flags().BoolVar(&allReport, "all", false, "Get all sessions")
+	getSessionCmd.Flags().StringVarP(&output, "output", "o", "text", "Specify the output format")
+	getSessionCmd.Flags().Lookup("month").NoOptDefVal = strconv.Itoa(int(currentMonth))
+	getSessionCmd.Flags().Lookup("year").NoOptDefVal = strconv.Itoa(currentYear)
 }

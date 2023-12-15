@@ -22,7 +22,7 @@ func NewDatabase(engine string, path string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&repositories.RepoCompany{}, &repositories.RepoDay{})
+	db.AutoMigrate(&repositories.RepoCompany{}, &repositories.RepoSession{})
 
 	return db, nil
 }

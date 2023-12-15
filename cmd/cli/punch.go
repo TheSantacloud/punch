@@ -9,7 +9,7 @@ import (
 
 var startCmd = &cobra.Command{
 	Use:   "start [time]",
-	Short: "Starts a new work day",
+	Short: "Starts a new work session",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return getCompanyIfExists(currentCompanyName)
@@ -20,18 +20,18 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		day, err := Puncher.StartDay(*currentCompany, timestamp, punchMessage)
+		session, err := Puncher.StartSession(*currentCompany, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}
-		printBOD(day)
+		printBOD(session)
 		return nil
 	},
 }
 
 var endCmd = &cobra.Command{
 	Use:   "end [time]",
-	Short: "End a work day",
+	Short: "End a work session",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return getCompanyIfExists(currentCompanyName)
@@ -42,30 +42,30 @@ var endCmd = &cobra.Command{
 			return err
 		}
 
-		day, _ := Puncher.EndDay(*currentCompany, timestamp, punchMessage)
+		session, _ := Puncher.EndSession(*currentCompany, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}
-		printEOD(day)
+		printEOD(session)
 		return nil
 	},
 }
 
-func printBOD(day *models.Day) {
-	fmt.Printf("Clocked in at %s\n", day.Start.Format("15:04:05"))
+func printBOD(session *models.Session) {
+	fmt.Printf("Clocked in at %s\n", session.Start.Format("15:04:05"))
 }
 
-func printEOD(day *models.Day) error {
-	earnings, err := day.Earnings()
-	duration := day.End.Sub(*day.Start)
+func printEOD(session *models.Session) error {
+	earnings, err := session.Earnings()
+	duration := session.End.Sub(*session.Start)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Clocked out at %s after %s (%.2f %s)\n",
-		day.End.Format("15:04:05"),
+		session.End.Format("15:04:05"),
 		duration,
 		earnings,
-		day.Company.Currency)
+		session.Company.Currency)
 	return nil
 }
 

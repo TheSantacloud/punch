@@ -15,7 +15,7 @@ var (
 
 var editCmd = &cobra.Command{
 	Use:   "edit [time]",
-	Short: "interactively edit work days",
+	Short: "interactively edit work sessions",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		err := getCompanyIfExists(currentCompanyName)
 		if err != nil {
@@ -52,16 +52,16 @@ var editCompanyCmd = &cobra.Command{
 	},
 }
 
-var editDayCmd = &cobra.Command{
-	Use:     "day [date]",
-	Aliases: []string{"days"},
-	Short:   "edit a specific day (default today)",
+var editSessionCmd = &cobra.Command{
+	Use:     "session [date]",
+	Aliases: []string{"sessions"},
+	Short:   "edit a specific session (defaults to latest today)",
 	Args:    cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var slice *[]models.Day
+		var slice *[]models.Session
 		var err error
 		if allCompanies {
-			slice, err = DayRepository.GetAllDaysForAllCompanies()
+			slice, err = SessionRepository.GetAllSessionsAllCompanies()
 			if err != nil {
 				log.Fatalf("%v", err)
 			}
@@ -70,23 +70,23 @@ var editDayCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("%v", err)
 			}
-			day, err := DayRepository.GetDayFromDateForCompany(timestamp, *currentCompany)
+			session, err := SessionRepository.GetLatestSessionOnSpecificDate(timestamp, *currentCompany)
 			if err != nil {
 				log.Fatalf("%v", err)
 			}
-			slice = &[]models.Day{*day}
+			slice = &[]models.Session{*session}
 		}
 		err = editSlice(slice)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
 		Puncher.Sync(slice)
-		fmt.Printf("Updated %d day(s)\n", len(*slice))
+		fmt.Printf("Updated %d session(s)\n", len(*slice))
 	},
 }
 
-func editSlice(days *[]models.Day) error {
-	buf, err := models.SerializeDaysToYAML(*days)
+func editSlice(sessions *[]models.Session) error {
+	buf, err := models.SerializeSessionsToYAML(*sessions)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func editSlice(days *[]models.Day) error {
 		return err
 	}
 
-	err = models.DeserializeDaysFromYAML(buf, days)
+	err = models.DeserializeSessionsFromYAML(buf, sessions)
 	if err != nil {
 		return err
 	}
@@ -106,8 +106,8 @@ func editSlice(days *[]models.Day) error {
 
 func init() {
 	rootCmd.AddCommand(editCmd)
-	editCmd.AddCommand(editDayCmd)
+	editCmd.AddCommand(editSessionCmd)
 	editCmd.AddCommand(editCompanyCmd)
-	editDayCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
-	editDayCmd.Flags().BoolVarP(&allCompanies, "all", "a", false, "Edit all companies")
+	editSessionCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	editSessionCmd.Flags().BoolVarP(&allCompanies, "all", "a", false, "Edit all companies")
 }

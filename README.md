@@ -4,16 +4,18 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] support multi work periods within one day
-- [ ] add autosync support on dedicated actions
-- [ ] toggleable sync on edit via config
-- [ ] support report on all companies
+- [ ] add sync support - pull
+- [ ] add sync support - push
+- [ ] add autosync on dedicated actions (start, finish, edit, remove)
+- [ ] make cli get only for sessions, and separate out companies
+- [ ] add report --all-companies
 - [ ] delete day (via delete and via edit)
 - [ ] add tests
 - [ ] write a complete readme with guides
 - [ ] add `mockgen -source=pkg/repositories/interfaces.go -destination=tests/mock.go -package=tests` to the pre-commit hook
 - [ ] add github actions
-- [ ] spreadsheet init (setup)
+- [ ] spreadsheet init (sync setup)
+- [X] support multi work periods within one day (and rename day session)
 - [X] refactor `Database` completely. it's horrible. make it a repository
 - [X] add named remotes with types (only with sheets available)
 - [X] change sync to push/pull remotes

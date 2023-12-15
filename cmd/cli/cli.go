@@ -17,7 +17,7 @@ import (
 // common instances
 var (
 	Config            *config.Config
-	DayRepository     repositories.DayRepository
+	SessionRepository repositories.SessionRepository
 	CompanyRepository repositories.CompanyRepository
 	Puncher           *puncher.Puncher
 )
@@ -39,15 +39,15 @@ var rootCmd = &cobra.Command{
 		return getCompanyIfExists(currentCompanyName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		day, err := Puncher.ToggleCheckInOut(currentCompany, punchMessage)
+		session, err := Puncher.ToggleCheckInOut(currentCompany, punchMessage)
 		if err != nil {
 			return err
 		}
 
-		if day.End != nil {
-			printEOD(day)
+		if session.End != nil {
+			printEOD(session)
 		} else {
-			printBOD(day)
+			printBOD(session)
 		}
 		return nil
 	},
@@ -85,9 +85,9 @@ func Execute(cfg *config.Config) error {
 		return fmt.Errorf("Unable to connect to models. %v", err)
 	}
 
-	DayRepository = repositories.NewGORMDayRepository(db)
+	SessionRepository = repositories.NewGORMSessionRepository(db)
 	CompanyRepository = repositories.NewGORMCompanyRepository(db)
-	Puncher = puncher.NewPuncher(DayRepository)
+	Puncher = puncher.NewPuncher(SessionRepository)
 
 	err = rootCmd.Execute()
 	if err != nil {

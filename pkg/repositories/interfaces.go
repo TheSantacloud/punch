@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type DayRepository interface {
-	Insert(day *models.Day) error
-	GetDayFromDateForAllCompanies(date time.Time) (*[]models.Day, error)
-	GetDayFromDateForCompany(date time.Time, company models.Company) (*models.Day, error)
-	Update(day *models.Day) error
-	GetAllDaysForCompany(company models.Company) (*[]models.Day, error)
-	GetAllDaysForAllCompanies() (*[]models.Day, error)
+type SessionRepository interface {
+	Insert(session *models.Session) error
+	Update(session *models.Session) error
+	GetAllSessions(company models.Company) (*[]models.Session, error)
+	GetAllSessionsAllCompanies() (*[]models.Session, error)
+	GetLatestSessionOnSpecificDate(date time.Time, company models.Company) (*models.Session, error)
+	GetLatestSessionOnSpecificDateAllCompanies(date time.Time) (*[]models.Session, error)
 }
 
 type CompanyRepository interface {
