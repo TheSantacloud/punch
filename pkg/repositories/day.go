@@ -19,15 +19,6 @@ type RepoDay struct {
 	Company     RepoCompany `gorm:"foreignKey:CompanyName;references:Name"`
 }
 
-type DayRepository interface {
-	Insert(day *models.Day) error
-	GetDayFromDateForAllCompanies(date time.Time) (*[]models.Day, error)
-	GetDayFromDateForCompany(date time.Time, company models.Company) (*models.Day, error)
-	Update(day *models.Day) error
-	GetAllDaysForCompany(company models.Company) (*[]models.Day, error)
-	GetAllDaysForAllCompanies() (*[]models.Day, error)
-}
-
 type GORMDayRepository struct {
 	db *gorm.DB
 }

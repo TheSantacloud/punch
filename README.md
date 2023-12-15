@@ -11,6 +11,7 @@ A simple CLI punchcard application
 - [ ] delete day (via delete and via edit)
 - [ ] add tests
 - [ ] write a complete readme with guides
+- [ ] add `mockgen -source=pkg/repositories/interfaces.go -destination=tests/mock.go -package=tests` to the pre-commit hook
 - [ ] add github actions
 - [ ] spreadsheet init (setup)
 - [X] refactor `Database` completely. it's horrible. make it a repository

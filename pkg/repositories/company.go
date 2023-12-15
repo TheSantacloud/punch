@@ -15,16 +15,6 @@ type RepoCompany struct {
 	Currency string
 }
 
-type CompanyRepository interface {
-	GetAll() ([]models.Company, error)
-	Insert(company *models.Company) error
-	Delete(company *models.Company) error
-	GetByName(name string) (*models.Company, error)
-	SafeGetByName(name string) (*models.Company, error)
-	Rename(company *models.Company, newName string) error
-	Update(company *models.Company) error
-}
-
 type GORMCompanyRepository struct {
 	db *gorm.DB
 }
