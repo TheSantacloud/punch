@@ -2,7 +2,7 @@ package cli
 
 import (
 	"fmt"
-	"log"
+	"time"
 
 	"github.com/dormunis/punch/pkg/editor"
 	"github.com/dormunis/punch/pkg/models"
@@ -16,11 +16,12 @@ var (
 var editCmd = &cobra.Command{
 	Use:   "edit [time]",
 	Short: "interactively edit work sessions",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		err := getCompanyIfExists(currentCompanyName)
 		if err != nil {
-			log.Fatalf("%v", err)
+			return err
 		}
+		return nil
 	},
 }
 
@@ -29,26 +30,27 @@ var editCompanyCmd = &cobra.Command{
 	Aliases: []string{"companies"},
 	Short:   "edit a specific company",
 	Args:    cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		company, err := CompanyRepository.GetByName(args[0])
 		if err != nil {
-			log.Fatalf("%v", err)
+			return err
 		}
 		buf, err := company.Serialize()
 		if err != nil {
-			log.Fatalf("%v", err)
+			return err
 		}
 		err = editor.InteractiveEdit(buf, "yaml")
 		if err != nil {
-			log.Fatalf("%v", err)
+			return err
 		}
 		var updateCompany models.Company
 		err = models.DeserializeCompanyFromYAML(buf, &updateCompany)
 		if err != nil {
-			log.Fatalf("%v", err)
+			return err
 		}
 		CompanyRepository.Update(&updateCompany)
 		fmt.Printf("Updated company %s\n", updateCompany.Name)
+		return nil
 	},
 }
 
@@ -57,35 +59,42 @@ var editSessionCmd = &cobra.Command{
 	Aliases: []string{"sessions"},
 	Short:   "edit a specific session (defaults to latest today)",
 	Args:    cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		var slice *[]models.Session
 		var err error
 		if allCompanies {
 			slice, err = SessionRepository.GetAllSessionsAllCompanies()
 			if err != nil {
-				log.Fatalf("%v", err)
+				return err
 			}
 		} else {
 			timestamp, err := getParsedTimeFromArgs(args)
 			if err != nil {
-				log.Fatalf("%v", err)
+				return err
 			}
-			session, err := SessionRepository.GetLatestSessionOnSpecificDate(timestamp, *currentCompany)
-			if err != nil {
-				log.Fatalf("%v", err)
-			}
-			slice = &[]models.Session{*session}
+			startOfDay := timestamp.Truncate(24 * time.Hour)
+			endOfDay := startOfDay.Add(24 * time.Hour)
+			slice, err = SessionRepository.GetAllSessionsBetweenDates(*currentCompany, startOfDay, endOfDay)
 		}
-		err = editSlice(slice)
+		err = editSessionSlice(slice)
 		if err != nil {
-			log.Fatalf("%v", err)
+			return err
 		}
-		Puncher.Sync(slice)
-		fmt.Printf("Updated %d session(s)\n", len(*slice))
+		sessionsUpdatedCount := 0
+		for _, session := range *slice {
+			err = SessionRepository.Update(&session)
+			if err != nil {
+				fmt.Printf("Unable to update session %s: %v\n", session.Start, err)
+			} else {
+				sessionsUpdatedCount++
+			}
+		}
+		fmt.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
+		return nil
 	},
 }
 
-func editSlice(sessions *[]models.Session) error {
+func editSessionSlice(sessions *[]models.Session) error {
 	buf, err := models.SerializeSessionsToYAML(*sessions)
 	if err != nil {
 		return err

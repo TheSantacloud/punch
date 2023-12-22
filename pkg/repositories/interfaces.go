@@ -9,6 +9,7 @@ type SessionRepository interface {
 	Insert(session *models.Session) error
 	Update(session *models.Session) error
 	GetAllSessions(company models.Company) (*[]models.Session, error)
+	GetAllSessionsBetweenDates(company models.Company, start time.Time, end time.Time) (*[]models.Session, error)
 	GetAllSessionsAllCompanies() (*[]models.Session, error)
 	GetLatestSessionOnSpecificDate(date time.Time, company models.Company) (*models.Session, error)
 	GetLatestSessionOnSpecificDateAllCompanies(date time.Time) (*[]models.Session, error)

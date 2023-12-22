@@ -10,11 +10,11 @@ A simple CLI punchcard application
 - [ ] make cli get only for sessions, and separate out companies
 - [ ] add report --all-companies
 - [ ] delete day (via delete and via edit)
-- [ ] add tests
-- [ ] write a complete readme with guides
 - [ ] add `mockgen -source=pkg/repositories/interfaces.go -destination=tests/mock.go -package=tests` to the pre-commit hook
-- [ ] add github actions
+- [ ] add tests
 - [ ] spreadsheet init (sync setup)
+- [ ] add github actions
+- [ ] write a complete readme with guides
 - [X] support multi work periods within one day (and rename day session)
 - [X] refactor `Database` completely. it's horrible. make it a repository
 - [X] add named remotes with types (only with sheets available)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -18,6 +19,7 @@ type Session struct {
 }
 
 type EditableSession struct {
+	ID        string `yaml:"id"`
 	Company   string `yaml:"company"`
 	Date      string `yaml:"date"`
 	StartTime string `yaml:"start_time"`
@@ -66,16 +68,11 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString("# Change either the `start_time` or `end_time` fields to edit the day\n")
-	buf.WriteString("# The `company` and `date` fields are for reference only\n")
+	buf.WriteString("# The `id`, `company` and `date` fields are for reference only\n")
 	buf.WriteString("\n")
-	for _, session := range sessions {
-		ed := struct {
-			Company   string `yaml:"company"`
-			Date      string `yaml:"date"`
-			StartTime string `yaml:"start_time"`
-			EndTime   string `yaml:"end_time"`
-			Note      string `yaml:"note"`
-		}{
+	for i, session := range sessions {
+		ed := EditableSession{
+			ID:        fmt.Sprint(session.ID),
 			Company:   session.Company.Name,
 			Date:      session.Start.Format("2006-01-02"),
 			StartTime: session.Start.Format("15:04:05"),
@@ -89,7 +86,9 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 		}
 
 		buf.Write(data)
-		buf.WriteString("---\n")
+		if i < len(sessions)-1 {
+			buf.WriteString("---\n")
+		}
 	}
 
 	return &buf, nil
@@ -99,14 +98,7 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 	decoder := yaml.NewDecoder(buf)
 
 	for {
-		var ed struct {
-			Company   string `yaml:"company"`
-			Date      string `yaml:"date"`
-			StartTime string `yaml:"start_time"`
-			EndTime   string `yaml:"end_time"`
-			Note      string `yaml:"note"`
-		}
-
+		var ed EditableSession
 		err := decoder.Decode(&ed)
 		if err != nil {
 			if err == io.EOF {
@@ -115,17 +107,19 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 			return err
 		}
 
-		if ed.Company == "" &&
-			ed.Date == "" &&
-			ed.StartTime == "" &&
-			ed.EndTime == "" &&
-			ed.Note == "" {
-			continue
+		fmt.Printf("%s\n", ed)
+		if ed.ID == "" {
+			return fmt.Errorf("missing ID field for session")
+		}
+
+		id, err := strconv.ParseUint(ed.ID, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid ID format for session: %s", ed.ID)
 		}
 
 		updated := false
 		for i, session := range *sessions {
-			if session.Company.Name == ed.Company && session.Start.Format("2006-01-02") == ed.Date {
+			if session.ID == uint32(id) {
 				startTime, err := time.Parse("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date)
 				if err != nil {
 					return err
@@ -133,6 +127,10 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 				endTime, err := time.Parse("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date)
 				if err != nil {
 					return err
+				}
+
+				if startTime.After(endTime) || startTime.Equal(endTime) {
+					return fmt.Errorf("start time must be before end time")
 				}
 
 				(*sessions)[i].Start = &startTime
@@ -144,7 +142,7 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 		}
 
 		if !updated {
-			return fmt.Errorf("could not find entry for company '%s' on date '%s'", ed.Company, ed.Date)
+			return fmt.Errorf("could not find entry for session ID '%d'", id)
 		}
 	}
 

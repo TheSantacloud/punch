@@ -87,13 +87,3 @@ func (p *Puncher) EndSession(company models.Company, timestamp time.Time, note s
 
 	return session, nil
 }
-
-// TODO: should this exist here?
-func (p *Puncher) Sync(sessions *[]models.Session) error {
-	// TODO: do this in bulk/async?
-	for _, session := range *sessions {
-		p.repo.Update(&session)
-	}
-
-	return nil
-}

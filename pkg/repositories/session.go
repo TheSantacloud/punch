@@ -8,7 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var ErrSessionNotFound = errors.New("Session record not found")
+var (
+	ErrSessionNotFound        = errors.New("Session record not found")
+	SessionAlreadyExistsError = errors.New("Session already exists")
+)
 
 type RepoSession struct {
 	ID          uint32 `gorm:"primaryKey;autoIncrement"`
@@ -29,6 +32,23 @@ func NewGORMSessionRepository(db *gorm.DB) *GORMSessionRepository {
 
 func (repo *GORMSessionRepository) Insert(session *models.Session) error {
 	repoSession := ToRepoSession(*session)
+
+	var existingByID RepoSession
+	idResult := repo.db.Where("id = ?", repoSession.ID).First(&existingByID)
+	if idResult.Error == nil {
+		return SessionAlreadyExistsError
+	}
+
+	var existingByDetails RepoSession
+	detailResult := repo.db.Where("start = ? AND end = ? AND company_name = ?",
+		repoSession.Start,
+		repoSession.End,
+		repoSession.CompanyName).First(&existingByDetails)
+
+	if detailResult.Error == nil {
+		return SessionAlreadyExistsError
+	}
+
 	return repo.db.Create(&repoSession).Error
 }
 
@@ -87,6 +107,28 @@ func (repo *GORMSessionRepository) GetAllSessions(company models.Company) (*[]mo
 	var repoSessions []RepoSession
 	err := repo.db.Preload("Company").
 		Where("company_name = ?", company.Name).
+		Order("start DESC").
+		Find(&repoSessions).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrSessionNotFound
+		}
+		return nil, err
+	}
+	var sessions []models.Session
+	for _, repoSession := range repoSessions {
+		sessions = append(sessions, ToDomainSession(repoSession))
+	}
+	return &sessions, nil
+}
+
+func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(company models.Company, start time.Time, end time.Time) (*[]models.Session, error) {
+	var repoSessions []RepoSession
+	err := repo.db.Preload("Company").
+		Where("company_name = ? AND start >= ? AND end < ?",
+			company.Name,
+			start,
+			end).
 		Order("start DESC").
 		Find(&repoSessions).Error
 	if err != nil {

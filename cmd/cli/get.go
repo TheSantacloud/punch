@@ -2,9 +2,9 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"log"
-	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -29,6 +29,7 @@ var (
 	allReport       bool
 	output          string
 	filepath        string
+	descendingOrder bool
 )
 
 var getCmd = &cobra.Command{
@@ -41,22 +42,23 @@ var getCompanyCmd = &cobra.Command{
 	Short:   "Get a company",
 	Aliases: []string{"companies"},
 	Args:    cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 {
 			company, err := CompanyRepository.GetByName(args[0])
 			if err != nil {
-				log.Fatalf("Unable to get company: %v", err)
+				return fmt.Errorf("Unable to get company: %v", err)
 			}
 			fmt.Println(company.String())
 		} else {
 			companies, err := CompanyRepository.GetAll()
 			if err != nil {
-				log.Fatalf("Unable to get companies: %v", err)
+				return fmt.Errorf("Unable to get companies: %v", err)
 			}
 			for _, company := range companies {
 				fmt.Println(company.String())
 			}
 		}
+		return nil
 	},
 }
 
@@ -67,13 +69,13 @@ var getSessionCmd = &cobra.Command{
     If a date is specified, the format must be YYYY-MM-DD.`,
 	Example: `punch get session 
 punch get session 2020-01-01
-punch get session  01-01`,
+punch get session 01-01`,
 	Aliases: []string{"sessions"},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		err := getCompanyIfExists(currentCompanyName)
 		if err != nil {
 			// TODO: support all companies
-			log.Fatalf("Report on all companies not supported yet")
+			return errors.New("Report on all companies not supported yet")
 		}
 		err = preRunCheckOutput()
 		if err != nil {
@@ -81,27 +83,33 @@ punch get session  01-01`,
 		}
 		timeFlagCount := getAmountOfTimeFilterFlags()
 		if timeFlagCount > 1 {
-			return fmt.Errorf("only one of --week, --month, --year or --all can be set")
+			return errors.New("only one of --week, --month, --year or --all can be set")
 		}
 
-		reportTimeframe, err = getReportTimeframe()
+		reportTimeframe, err = getTimeframe()
 		if err != nil {
 			return err
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		slice, err := getRelevatSessions()
 		if err != nil {
-			log.Fatalf("%v", err)
-			os.Exit(1)
+			return err
 		}
-		content := generateView(slice)
-		fmt.Print(content)
+
+		sortSessions(slice, descendingOrder)
+
+		content, err := generateView(slice)
+		if err != nil {
+			return err
+		}
+		fmt.Print(*content)
+		return nil
 	},
 }
 
-func getReportTimeframe() (*ReportTimeframe, error) {
+func getTimeframe() (*ReportTimeframe, error) {
 	reportTimeframe := REPORT_TIMEFRAME_DAY
 	if weekReport {
 		reportTimeframe = REPORT_TIMEFRAME_WEEK
@@ -122,10 +130,10 @@ func getReportTimeframe() (*ReportTimeframe, error) {
 func validateMonth(month string) error {
 	monthInt, err := strconv.Atoi(month)
 	if err != nil {
-		return fmt.Errorf("invalid month format")
+		return errors.New("invalid month format")
 	}
 	if monthInt < 1 || monthInt > 12 {
-		return fmt.Errorf("invalid month format")
+		return errors.New("invalid month format")
 	}
 	return nil
 }
@@ -133,11 +141,11 @@ func validateMonth(month string) error {
 func validateYear(year string) error {
 	yearInt, err := strconv.Atoi(year)
 	if err != nil {
-		return fmt.Errorf("invalid year format")
+		return errors.New("invalid year format")
 	}
 	currentYear := time.Now().Year()
 	if yearInt < 1970 || yearInt > currentYear {
-		return fmt.Errorf("invalid year format")
+		return errors.New("invalid year format")
 	}
 	return nil
 }
@@ -145,32 +153,35 @@ func validateYear(year string) error {
 func getRelevatSessions() (*[]models.Session, error) {
 	var slice []models.Session
 
-	if *reportTimeframe == REPORT_TIMEFRAME_DAY {
-		session, err := SessionRepository.GetLatestSessionOnSpecificDate(time.Now(), *currentCompany)
-		if err != nil {
-			return nil, err
-		}
-		slice = []models.Session{*session}
-	} else {
-		startDate := getStartDate()
-		endDate := getEndDate(startDate)
-		sessions, err := SessionRepository.GetAllSessions(*currentCompany)
-		if err != nil {
-			log.Fatalf("%v", err)
-			os.Exit(1)
-		}
-		for _, session := range *sessions {
-			if session.Start.After(startDate) && session.End.Before(endDate) {
-				slice = append(slice, session)
-			}
+	startDate := getStartDate()
+	endDate := getEndDate(startDate)
+	sessions, err := SessionRepository.GetAllSessionsBetweenDates(*currentCompany, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	for _, session := range *sessions {
+		if session.Start.After(startDate) && session.End.Before(endDate) {
+			slice = append(slice, session)
 		}
 	}
 	return &slice, nil
 }
 
-func generateView(slice *[]models.Session) string {
+func sortSessions(slice *[]models.Session, descending bool) {
+	sort.SliceStable(*slice, func(i, j int) bool {
+		prevSession := (*slice)[i]
+		nextSession := (*slice)[j]
+		if descending {
+			return prevSession.Start.After(*nextSession.Start)
+		} else {
+			return prevSession.Start.Before(*nextSession.Start)
+		}
+	})
+}
+
+func generateView(slice *[]models.Session) (*string, error) {
 	if len(*slice) == 0 {
-		log.Fatalf("No available data")
+		return nil, errors.New("No available data")
 	}
 	var (
 		buffer        *bytes.Buffer
@@ -182,10 +193,18 @@ func generateView(slice *[]models.Session) string {
 
 	switch output {
 	case "text":
+		lastSessionDate := (*slice)[0].Start
 		for _, session := range *slice {
+			if session.End == nil {
+				continue
+			}
 			totalDuration += session.End.Sub(*session.Start)
 			earnings, _ := session.Earnings()
 			totalEarnings += earnings
+
+			if session.Start.Day() > lastSessionDate.Day() {
+				lastSessionDate = session.Start
+			}
 
 			if verbose {
 				content += session.Summary()
@@ -193,12 +212,8 @@ func generateView(slice *[]models.Session) string {
 			}
 		}
 
-		prefix := getStartDate().Format("2006-01-02")
-		if verbose {
-			prefix = "Total\t"
-		}
 		content += fmt.Sprintf("%s\t%s\t%s\t%.2f %s\n",
-			prefix,
+			lastSessionDate.Format("2006-01-02"),
 			currentCompany.Name,
 			totalDuration,
 			totalEarnings,
@@ -211,39 +226,39 @@ func generateView(slice *[]models.Session) string {
 			buffer, err = models.SerializeSessionsToCSV(*slice)
 		}
 		if err != nil {
-			log.Fatalf("%v", err)
-			os.Exit(1)
+			return nil, err
 		}
 		content = buffer.String()
 	}
-	return content
+	return &content, nil
 }
 
 func getStartDate() time.Time {
 	today := time.Now()
 	year, _, _ := today.Date()
 
+	if allReport {
+		return time.Time{}
+	}
+
 	switch *reportTimeframe {
+	case REPORT_TIMEFRAME_DAY:
+		return time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	case REPORT_TIMEFRAME_WEEK:
 		return today.AddDate(0, 0, -int(today.Weekday()))
-
-	case REPORT_TIMEFRAME_YEAR:
-		yr, err := parseYear(yearReport)
-		if err == nil {
-			return time.Date(yr, time.January, 1, 0, 0, 0, 0, today.Location())
-		}
-
 	case REPORT_TIMEFRAME_MONTH:
 		mo, err := parseMonth(monthReport)
 		if err == nil {
 			return time.Date(year, mo, 1, 0, 0, 0, 0, today.Location())
 		}
+	case REPORT_TIMEFRAME_YEAR:
+		yr, err := parseYear(yearReport)
+		if err == nil {
+			return time.Date(yr, time.January, 1, 0, 0, 0, 0, today.Location())
+		}
 	}
 
-	if allReport {
-		return time.Time{}
-	}
-
+	// default to current day
 	return today.AddDate(0, 0, -today.Day()+1)
 }
 
@@ -268,11 +283,8 @@ func getEndDate(startDate time.Time) time.Time {
 		}
 	}
 
-	if allReport {
-		return time.Time{}
-	}
-
-	return startDate
+	// default to now
+	return time.Now()
 }
 
 func lastDayOfMonth(year int, month time.Month) int {
@@ -314,6 +326,7 @@ func init() {
 	getSessionCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
 	getSessionCmd.Flags().StringVar(&yearReport, "year", "", "Get report for a specific year (format: YYYY), leave empty for current year")
 	getSessionCmd.Flags().BoolVar(&allReport, "all", false, "Get all sessions")
+	getSessionCmd.Flags().BoolVar(&descendingOrder, "desc", false, "Sort sessions in descending order (defaults to ascending order)")
 	getSessionCmd.Flags().StringVarP(&output, "output", "o", "text", "Specify the output format")
 	getSessionCmd.Flags().Lookup("month").NoOptDefVal = strconv.Itoa(int(currentMonth))
 	getSessionCmd.Flags().Lookup("year").NoOptDefVal = strconv.Itoa(currentYear)

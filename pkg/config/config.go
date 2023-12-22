@@ -28,7 +28,7 @@ type Database struct {
 }
 
 type Remote interface {
-	Type() string
+	Type() string // TODO: change to specific preset type RemoteType
 	String() string
 }
 
