@@ -245,7 +245,8 @@ func getStartDate() time.Time {
 	case REPORT_TIMEFRAME_DAY:
 		return time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	case REPORT_TIMEFRAME_WEEK:
-		return today.AddDate(0, 0, -int(today.Weekday()))
+		daysToSubtract := int(today.Weekday())
+		return time.Date(today.Year(), today.Month(), today.Day()-daysToSubtract, 0, 0, 0, 0, today.Location())
 	case REPORT_TIMEFRAME_MONTH:
 		mo, err := parseMonth(monthReport)
 		if err == nil {

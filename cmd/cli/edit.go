@@ -31,6 +31,8 @@ var editCompanyCmd = &cobra.Command{
 	Short:   "edit a specific company",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO: edit name should edit rather than add
+		// TODO: delete functionality
 		company, err := CompanyRepository.GetByName(args[0])
 		if err != nil {
 			return err
@@ -60,6 +62,7 @@ var editSessionCmd = &cobra.Command{
 	Short:   "edit a specific session (defaults to latest today)",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO: delete functionality
 		var slice *[]models.Session
 		var err error
 		if allCompanies {

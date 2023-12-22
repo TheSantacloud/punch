@@ -36,7 +36,7 @@ var addCompanyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
 		price, err := strconv.ParseInt(args[1], 10, 32)
-		if err != nil || price <= 0 {
+		if err != nil || price < 0 {
 			log.Fatalf("invalid price %s", args[1])
 		}
 		newCompany := models.Company{

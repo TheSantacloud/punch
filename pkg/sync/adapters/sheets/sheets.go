@@ -1,4 +1,4 @@
-package sheetsync
+package sheets
 
 import (
 	"context"
@@ -32,13 +32,13 @@ type Sheet struct {
 }
 
 type Record struct {
-	Day models.Day
-	Row int
+	Session models.Session
+	Row     int
 }
 
-func (r Record) Matches(day models.Day) bool {
-	return r.Day.Start.Format("02/01/2006") == day.Start.Format("02/01/2006") &&
-		r.Day.Company.Name == day.Company.Name
+func (r Record) Matches(session models.Session) bool {
+	return r.Session.Start.Format("02/01/2006") == session.Start.Format("02/01/2006") &&
+		r.Session.Company.Name == session.Company.Name
 }
 
 var (
@@ -87,90 +87,6 @@ func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
 	return &sheet, nil
 }
 
-func (s *Sheet) UpsertDay(day models.Day, records *[]Record) error {
-	for _, record := range *records {
-		if record.Day.Start == nil {
-			continue
-		}
-		if record.Matches(day) {
-			return s.updateDay(day, record)
-		}
-	}
-	return s.insertDay(day)
-}
-
-func (s *Sheet) updateDay(day models.Day, record Record) error {
-	if day.Start == nil || day.End == nil {
-		return fmt.Errorf("Day must be complete")
-	}
-	var vr sheets.ValueRange
-	rangeToUpdate := fmt.Sprintf("%s!A%d", s.SheetName, record.Row+1)
-	vr.Values = append(vr.Values, s.dayToRow(day))
-	_, err := s.Service.Spreadsheets.Values.Update(s.SpreadsheetId,
-		rangeToUpdate, &vr).ValueInputOption("USER_ENTERED").Do()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Sheet) insertDay(day models.Day) error {
-	if day.Start == nil || day.End == nil {
-		return fmt.Errorf("Day must be complete")
-	}
-	var vr sheets.ValueRange
-	vr.Values = append(vr.Values, s.dayToRow(day))
-	_, err := s.Service.Spreadsheets.Values.Append(s.SpreadsheetId,
-		s.SheetName, &vr).ValueInputOption("USER_ENTERED").Do()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Sheet) dayToRow(day models.Day) []interface{} {
-	maxIdx := max(companyColumnIndex, dateColumnIndex, startTimeColumnIndex,
-		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
-	row := make([]interface{}, maxIdx)
-	for i := range row {
-		switch i {
-		case companyColumnIndex:
-			row[companyColumnIndex] = day.Company.Name
-		case dateColumnIndex:
-			row[dateColumnIndex] = day.Start.Format("02/01/2006")
-		case startTimeColumnIndex:
-			row[startTimeColumnIndex] = day.Start.Format("15:04:05")
-		case endTimeColumnIndex:
-			row[endTimeColumnIndex] = day.End.Format("15:04:05")
-		case totalTimeColumnIndex:
-			row[totalTimeColumnIndex] = day.Duration()
-		case noteColumnIndex:
-			row[noteColumnIndex] = day.Note
-		default:
-			row[i] = ""
-		}
-	}
-	return row
-}
-
-func getClient(ctx context.Context) (*http.Client, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("Unable to find home directory: %v", err)
-	}
-	path := filepath.Join(homeDir, ".work", "service-account.json")
-	b, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Unable to read service account key file: %v", err)
-	}
-
-	config, err := google.JWTConfigFromJSON(b, sheets.SpreadsheetsScope)
-	if err != nil {
-		log.Fatalf("Unable to parse service account key file to config: %v", err)
-	}
-	return config.Client(ctx), nil
-}
-
 func (s *Sheet) ParseSheet(records *[]Record) error {
 	resp, err := s.readSheet()
 	if err != nil {
@@ -187,36 +103,42 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 			continue
 		}
 
-		day, err := s.parseDayFromRow(row)
+		session, err := s.SessionFromRow(row)
 		if err != nil {
 			return err
 		}
-		record := Record{Day: *day, Row: i}
+		record := Record{Session: *session, Row: i}
 		*records = append(*records, record)
 	}
 	return nil
 }
 
-func (s *Sheet) parseHeaders(row []interface{}) {
-	for i, column := range row {
-		switch column {
-		case s.Columns.Company:
-			companyColumnIndex = i
-		case s.Columns.Date:
-			dateColumnIndex = i
-		case s.Columns.StartTime:
-			startTimeColumnIndex = i
-		case s.Columns.EndTime:
-			endTimeColumnIndex = i
-		case s.Columns.TotalTime:
-			totalTimeColumnIndex = i
-		case s.Columns.Note:
-			noteColumnIndex = i
+func (s *Sheet) SessionToRow(session models.Session) []interface{} {
+	maxIdx := max(companyColumnIndex, dateColumnIndex, startTimeColumnIndex,
+		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
+	row := make([]interface{}, maxIdx)
+	for i := range row {
+		switch i {
+		case companyColumnIndex:
+			row[companyColumnIndex] = session.Company.Name
+		case dateColumnIndex:
+			row[dateColumnIndex] = session.Start.Format("02/01/2006")
+		case startTimeColumnIndex:
+			row[startTimeColumnIndex] = session.Start.Format("15:04:05")
+		case endTimeColumnIndex:
+			row[endTimeColumnIndex] = session.End.Format("15:04:05")
+		case totalTimeColumnIndex:
+			row[totalTimeColumnIndex] = session.Duration()
+		case noteColumnIndex:
+			row[noteColumnIndex] = session.Note
+		default:
+			row[i] = ""
 		}
 	}
+	return row
 }
 
-func (s *Sheet) parseDayFromRow(row []interface{}) (*models.Day, error) {
+func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 	if len(row) < 3 {
 		return nil, fmt.Errorf("Invalid row")
 	}
@@ -242,13 +164,60 @@ func (s *Sheet) parseDayFromRow(row []interface{}) (*models.Day, error) {
 		note = ""
 	}
 
-	day := models.Day{
+	session := models.Session{
 		Company: models.Company{Name: row[companyColumnIndex].(string)},
 		Start:   &startTime,
 		End:     &endTime,
 		Note:    note,
 	}
-	return &day, nil
+	return &session, nil
+}
+
+func (s *Sheet) AddRow(session models.Session) error {
+	row := s.SessionToRow(session)
+	valueRange := &sheets.ValueRange{
+		Values: [][]interface{}{row},
+	}
+
+	_, err := s.Service.Spreadsheets.Values.Append(s.SpreadsheetId, s.SheetName, valueRange).ValueInputOption("RAW").Do()
+	return err
+}
+
+func getClient(ctx context.Context) (*http.Client, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Unable to find home directory: %v", err)
+	}
+	path := filepath.Join(homeDir, ".work", "service-account.json")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("Unable to read service account key file: %v", err)
+	}
+
+	config, err := google.JWTConfigFromJSON(b, sheets.SpreadsheetsScope)
+	if err != nil {
+		log.Fatalf("Unable to parse service account key file to config: %v", err)
+	}
+	return config.Client(ctx), nil
+}
+
+func (s *Sheet) parseHeaders(row []interface{}) {
+	for i, column := range row {
+		switch column {
+		case s.Columns.Company:
+			companyColumnIndex = i
+		case s.Columns.Date:
+			dateColumnIndex = i
+		case s.Columns.StartTime:
+			startTimeColumnIndex = i
+		case s.Columns.EndTime:
+			endTimeColumnIndex = i
+		case s.Columns.TotalTime:
+			totalTimeColumnIndex = i
+		case s.Columns.Note:
+			noteColumnIndex = i
+		}
+	}
 }
 
 func (s *Sheet) readSheet() (*sheets.ValueRange, error) {

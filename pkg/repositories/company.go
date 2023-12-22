@@ -10,7 +10,7 @@ import (
 var ErrCompanyNotFound = errors.New("record not found")
 
 type RepoCompany struct {
-	Name     string `gorm:"primaryKey"`
+	Name     string `gorm:"primaryKey;collate:NOCASE"`
 	PPH      uint16
 	Currency string
 }
