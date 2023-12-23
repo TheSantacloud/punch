@@ -22,6 +22,7 @@ func NewDatabase(engine string, path string) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// TODO: use default currency for RepoCompany
 	db.AutoMigrate(&repositories.RepoCompany{}, &repositories.RepoSession{})
 
 	return db, nil

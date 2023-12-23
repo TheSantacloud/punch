@@ -11,8 +11,8 @@ import (
 
 type SyncSource interface {
 	Type() string
-	Pull() (*[]models.Session, error)
-	Push() (*[]models.Session, error)
+	Pull() (map[models.Session]error, error)
+	Push() (map[models.Session]error, error)
 }
 
 var (

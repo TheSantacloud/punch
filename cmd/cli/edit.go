@@ -79,13 +79,18 @@ var editSessionCmd = &cobra.Command{
 			endOfDay := startOfDay.Add(24 * time.Hour)
 			slice, err = SessionRepository.GetAllSessionsBetweenDates(*currentCompany, startOfDay, endOfDay)
 		}
+		if len(*slice) == 0 {
+			fmt.Println("No sessions found")
+			return nil
+		}
+
 		err = editSessionSlice(slice)
 		if err != nil {
 			return err
 		}
 		sessionsUpdatedCount := 0
 		for _, session := range *slice {
-			err = SessionRepository.Update(&session)
+			err = SessionRepository.Update(&session, false)
 			if err != nil {
 				fmt.Printf("Unable to update session %s: %v\n", session.Start, err)
 			} else {

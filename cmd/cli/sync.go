@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	pushOnly bool
 	pullOnly bool
 )
 
@@ -18,12 +17,6 @@ var syncCmd = &cobra.Command{
 	Use:   "sync [remote]",
 	Short: "sync sessions with remote",
 	Args:  cobra.ExactArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if pullOnly && pushOnly {
-			return errors.New("Cannot use both --pull-only and --push-only")
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		remote, ok := Config.Remotes[args[0]]
 		if !ok {
@@ -36,39 +29,38 @@ var syncCmd = &cobra.Command{
 		}
 
 		var (
-			pullConflicts *[]models.Session
-			pushConflicts *[]models.Session
+			pullConflicts map[models.Session]error
+			pushConflicts map[models.Session]error
 		)
 
-		if !pushOnly {
-			pullConflicts, err = source.Pull()
-			if err != nil {
-				return err
-			}
+		pullConflicts, err = source.Pull()
+		if err != nil {
+			return err
+		}
 
-			if pullConflicts != nil && len(*pullConflicts) > 0 {
-				fmt.Println("Pull Conflicts:")
-				for _, conflict := range *pullConflicts {
-					fmt.Println(conflict)
-				}
+		// TODO: create a conflict manager and use EditInteractive to resolve it
+		if len(pullConflicts) > 0 {
+			fmt.Println("Pull conflicts:")
+			for session, err := range pullConflicts {
+				fmt.Printf("Session ID: %v\nError: %v\n", session, err)
 			}
 		}
 
-		if !pullOnly {
-			pushConflicts, err = source.Push()
-
-			if err != nil {
-				return err
-			}
-
-			if pushConflicts != nil && len(*pushConflicts) > 0 {
-				fmt.Println("Push Conflicts:")
-				for _, conflict := range *pushConflicts {
-					fmt.Println(conflict)
-				}
-			}
+		if pullOnly || len(pullConflicts) > 0 {
+			return nil
 		}
 
+		pushConflicts, err = source.Push()
+		if err != nil {
+			return err
+		}
+
+		if pushConflicts != nil && len(pushConflicts) > 0 {
+			fmt.Println("Push conflicts:")
+			for record, err := range pushConflicts {
+				fmt.Printf("Record: %v\nError: %v\n", record, err)
+			}
+		}
 		return nil
 	},
 }
@@ -76,5 +68,4 @@ var syncCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(syncCmd)
 	syncCmd.Flags().BoolVar(&pullOnly, "pull-only", false, "Only pull sessions from remote")
-	syncCmd.Flags().BoolVar(&pushOnly, "push-only", false, "Only push sessions to remote")
 }

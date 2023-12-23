@@ -4,15 +4,16 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] add sync support - push
 - [ ] add autosync on dedicated actions (start, finish, edit, remove)
-- [ ] make cli get only for sessions, and separate out companies
+- [ ] add conflict manager
 - [ ] add report --all-companies
 - [ ] delete day (via delete and via edit)
 - [ ] add tests
 - [ ] add `mockgen -source=pkg/repositories/interfaces.go -destination=tests/mock.go -package=tests` to the pre-commit hook
+- [ ] better ux for cli (sessions and companies are not the same, less kubectl-like) 
 - [ ] add github actions
 - [ ] write a complete readme with guides
+- [X] add sync support - push
 - [X] add sync support - pull
 - [X] support multi work periods within one day (and rename day session)
 - [X] refactor `Database` completely. it's horrible. make it a repository

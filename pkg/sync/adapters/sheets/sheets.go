@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/dormunis/punch/pkg/config"
@@ -16,19 +17,21 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
+type Columns struct {
+	ID        string
+	Company   string
+	Date      string
+	StartTime string
+	EndTime   string
+	TotalTime string
+	Note      string
+}
+
 type Sheet struct {
 	Service       *sheets.Service
 	SpreadsheetId string
 	SheetName     string
-
-	Columns struct {
-		Company   string
-		Date      string
-		StartTime string
-		EndTime   string
-		TotalTime string
-		Note      string
-	}
+	Columns       Columns
 }
 
 type Record struct {
@@ -36,12 +39,8 @@ type Record struct {
 	Row     int
 }
 
-func (r Record) Matches(session models.Session) bool {
-	return r.Session.Start.Format("02/01/2006") == session.Start.Format("02/01/2006") &&
-		r.Session.Company.Name == session.Company.Name
-}
-
 var (
+	idColumnIndex        int
 	companyColumnIndex   int
 	dateColumnIndex      int
 	startTimeColumnIndex int
@@ -55,12 +54,10 @@ func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
 
 	client, err := getClient(ctx)
 	if err != nil {
-		log.Fatalf("Unable to retrieve Sheets client: %v", err)
-		os.Exit(1)
+		return nil, err
 	}
 	srv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 		return nil, err
 	}
 
@@ -68,14 +65,7 @@ func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
 		Service:       srv,
 		SpreadsheetId: cfg.ID,
 		SheetName:     cfg.SheetName,
-		Columns: struct {
-			Company   string
-			Date      string
-			StartTime string
-			EndTime   string
-			TotalTime string
-			Note      string
-		}{
+		Columns: Columns{
 			Company:   cfg.Columns.Company,
 			Date:      cfg.Columns.Date,
 			StartTime: cfg.Columns.StartTime,
@@ -99,7 +89,7 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 			continue
 		}
 
-		if len(row) < 3 {
+		if len(row) < 4 {
 			continue
 		}
 
@@ -119,6 +109,8 @@ func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 	row := make([]interface{}, maxIdx)
 	for i := range row {
 		switch i {
+		case idColumnIndex:
+			row[idColumnIndex] = session.ID
 		case companyColumnIndex:
 			row[companyColumnIndex] = session.Company.Name
 		case dateColumnIndex:
@@ -126,9 +118,17 @@ func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 		case startTimeColumnIndex:
 			row[startTimeColumnIndex] = session.Start.Format("15:04:05")
 		case endTimeColumnIndex:
-			row[endTimeColumnIndex] = session.End.Format("15:04:05")
+			if session.End == nil {
+				row[endTimeColumnIndex] = ""
+			} else {
+				row[endTimeColumnIndex] = session.End.Format("15:04:05")
+			}
 		case totalTimeColumnIndex:
-			row[totalTimeColumnIndex] = session.Duration()
+			if session.End == nil {
+				row[totalTimeColumnIndex] = ""
+			} else {
+				row[totalTimeColumnIndex] = session.Duration()
+			}
 		case noteColumnIndex:
 			row[noteColumnIndex] = session.Note
 		default:
@@ -139,13 +139,23 @@ func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 }
 
 func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
-	if len(row) < 3 {
+	if len(row) < 4 {
 		return nil, fmt.Errorf("Invalid row")
+	}
+
+	var id *uint32
+	if row[idColumnIndex] != "" {
+		id = new(uint32)
+		value, err := strconv.ParseUint(row[idColumnIndex].(string), 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		*id = uint32(value)
 	}
 
 	var startTime time.Time
 	startTimestamp := row[startTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
-	startTime, err := time.Parse("15:04:05 02/01/2006", startTimestamp)
+	startTime, err := time.ParseInLocation("15:04:05 02/01/2006", startTimestamp, time.Local)
 	if err != nil {
 		startTime, err = time.Parse("02/01/2006", row[dateColumnIndex].(string))
 		if err != nil {
@@ -153,9 +163,15 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 		}
 	}
 
-	var endTime time.Time
-	endTimestamp := row[endTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
-	endTime, _ = time.Parse("15:04:05 02/01/2006", endTimestamp)
+	var endTime *time.Time
+	if len(row) > 4 && row[endTimeColumnIndex] != "" {
+		endTimestamp := row[endTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
+		parsedTime, err := time.ParseInLocation("15:04:05 02/01/2006", endTimestamp, time.Local)
+		if err != nil {
+			return nil, err
+		}
+		endTime = &parsedTime
+	}
 
 	var note string
 	if len(row) > noteColumnIndex {
@@ -165,21 +181,35 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 	}
 
 	session := models.Session{
+		ID:      id,
 		Company: models.Company{Name: row[companyColumnIndex].(string)},
 		Start:   &startTime,
-		End:     &endTime,
+		End:     endTime,
 		Note:    note,
 	}
 	return &session, nil
 }
 
 func (s *Sheet) AddRow(session models.Session) error {
+	// TODO: keep sheet sorted
 	row := s.SessionToRow(session)
 	valueRange := &sheets.ValueRange{
 		Values: [][]interface{}{row},
 	}
 
 	_, err := s.Service.Spreadsheets.Values.Append(s.SpreadsheetId, s.SheetName, valueRange).ValueInputOption("RAW").Do()
+	return err
+}
+
+func (s *Sheet) UpdateRow(record Record) error {
+	row := s.SessionToRow(record.Session)
+	valueRange := &sheets.ValueRange{
+		Values: [][]interface{}{row},
+	}
+
+	// Adding one because of the header row
+	rangeToUpdate := fmt.Sprintf("%s!A%d", s.SheetName, record.Row+1)
+	_, err := s.Service.Spreadsheets.Values.Update(s.SpreadsheetId, rangeToUpdate, valueRange).ValueInputOption("RAW").Do()
 	return err
 }
 
@@ -204,6 +234,8 @@ func getClient(ctx context.Context) (*http.Client, error) {
 func (s *Sheet) parseHeaders(row []interface{}) {
 	for i, column := range row {
 		switch column {
+		case s.Columns.ID:
+			idColumnIndex = i
 		case s.Columns.Company:
 			companyColumnIndex = i
 		case s.Columns.Date:

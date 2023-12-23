@@ -52,7 +52,7 @@ func (p *Puncher) StartSession(company models.Company, timestamp time.Time, note
 		Start:   &timestamp,
 		Note:    note,
 	}
-	err = p.repo.Insert(&session)
+	err = p.repo.Insert(&session, false)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to insert session: %v", err)
 	}
@@ -80,7 +80,7 @@ func (p *Puncher) EndSession(company models.Company, timestamp time.Time, note s
 		session.Note = note
 	}
 
-	err = p.repo.Update(session)
+	err = p.repo.Update(session, false)
 	if err != nil {
 		return nil, err
 	}

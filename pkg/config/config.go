@@ -33,9 +33,10 @@ type Remote interface {
 }
 
 type SpreadsheetRemote struct {
-	ID        string `mapstructure:"spreadsheet_id" validate:"required"`
-	SheetName string `mapstructure:"sheet_name" validate:"required"`
-	Columns   struct {
+	ID        string   `mapstructure:"spreadsheet_id" validate:"required"`
+	SheetName string   `mapstructure:"sheet_name" validate:"required"`
+	Columns   struct { // TODO: this is duplicated in sheet.go, find a better way
+		ID        string `validate:"required"`
 		Company   string `validate:"required"`
 		Date      string `validate:"required"`
 		StartTime string `mapstructure:"start_time" validate:"required"`
