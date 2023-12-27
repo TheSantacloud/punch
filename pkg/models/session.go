@@ -34,6 +34,14 @@ func (s Session) Matches(session Session) bool {
 	return *session.ID == *s.ID || s.Similar(session)
 }
 
+func (s Session) String() string {
+	return fmt.Sprintf("Company: %s, Date: %s, Duration: %s",
+		s.Company.Name,
+		s.Start.Format("02/01/2006"),
+		s.Duration(),
+	)
+}
+
 func (s Session) Similar(session Session) bool {
 	return s.Start.Format("02/01/2006 15:04:05") ==
 		session.Start.Format("02/01/2006 15:04:05") &&
@@ -100,8 +108,12 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 	buf.WriteString("# The `id`, `company` and `date` fields are for reference only\n")
 	buf.WriteString("\n")
 	for i, session := range sessions {
+		id := ""
+		if session.ID != nil {
+			id = fmt.Sprint(*session.ID)
+		}
 		ed := EditableSession{
-			ID:        fmt.Sprint(*session.ID),
+			ID:        id,
 			Company:   session.Company.Name,
 			Date:      session.Start.Format("2006-01-02"),
 			StartTime: session.Start.Format("15:04:05"),
@@ -147,26 +159,27 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 
 		updated := false
 		for i, session := range *sessions {
-			if *session.ID == uint32(id) {
-				startTime, err := time.Parse("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date)
-				if err != nil {
-					return err
-				}
-				endTime, err := time.Parse("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date)
-				if err != nil {
-					return err
-				}
-
-				if startTime.After(endTime) || startTime.Equal(endTime) {
-					return fmt.Errorf("start time must be before end time")
-				}
-
-				(*sessions)[i].Start = &startTime
-				(*sessions)[i].End = &endTime
-				(*sessions)[i].Note = ed.Note
-				updated = true
-				break
+			if *session.ID != uint32(id) {
+				continue
 			}
+			startTime, err := time.Parse("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date)
+			if err != nil {
+				return err
+			}
+			endTime, err := time.Parse("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date)
+			if err != nil {
+				return err
+			}
+
+			if startTime.After(endTime) || startTime.Equal(endTime) {
+				return fmt.Errorf("start time must be before end time")
+			}
+
+			(*sessions)[i].Start = &startTime
+			(*sessions)[i].End = &endTime
+			(*sessions)[i].Note = ed.Note
+			updated = true
+			break
 		}
 
 		if !updated {

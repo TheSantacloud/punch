@@ -11,16 +11,14 @@ import (
 
 type SyncSource interface {
 	Type() string
-	Pull() (map[models.Session]error, error)
-	Push() (map[models.Session]error, error)
+	Pull() ([]models.Session, error)
+	Push(*[]models.Session) error
 }
 
 var (
 	RemoteSourceNotSupportedError = errors.New("Source not implemented")
 	InvalidRemoteConfigError      = errors.New("Invalid remote config")
 	SessionRepositoryNotSetError  = errors.New("Session repository not set")
-	PullConflictError             = errors.New("Pull conflict error")
-	PushConflictError             = errors.New("Push conflict error")
 )
 
 func NewSource(remoteConfig config.Remote, sessionRepository repositories.SessionRepository) (SyncSource, error) {

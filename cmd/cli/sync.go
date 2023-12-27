@@ -2,8 +2,8 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 
+	"github.com/dormunis/punch/pkg/editor"
 	"github.com/dormunis/punch/pkg/models"
 	"github.com/dormunis/punch/pkg/sync"
 	"github.com/spf13/cobra"
@@ -28,41 +28,60 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		var (
-			pullConflicts map[models.Session]error
-			pushConflicts map[models.Session]error
-		)
-
-		pullConflicts, err = source.Pull()
+		resolvedSessions, err := pull(source)
 		if err != nil {
 			return err
 		}
 
-		// TODO: create a conflict manager and use EditInteractive to resolve it
-		if len(pullConflicts) > 0 {
-			fmt.Println("Pull conflicts:")
-			for session, err := range pullConflicts {
-				fmt.Printf("Session ID: %v\nError: %v\n", session, err)
-			}
-		}
-
-		if pullOnly || len(pullConflicts) > 0 {
+		if pullOnly {
 			return nil
 		}
 
-		pushConflicts, err = source.Push()
+		err = source.Push(resolvedSessions)
 		if err != nil {
 			return err
 		}
 
-		if pushConflicts != nil && len(pushConflicts) > 0 {
-			fmt.Println("Push conflicts:")
-			for record, err := range pushConflicts {
-				fmt.Printf("Record: %v\nError: %v\n", record, err)
-			}
-		}
 		return nil
 	},
+}
+
+func pull(source sync.SyncSource) (*[]models.Session, error) {
+	pulledSessions, err := source.Pull()
+	if err != nil {
+		return nil, err
+	}
+
+	sessions, err := SessionRepository.GetAllSessionsAllCompanies()
+	if err != nil {
+		return nil, err
+	}
+
+	conflictsBuffer, err := sync.GetConflicts(*sessions, pulledSessions)
+	if err != nil {
+		return nil, err
+	}
+
+	if conflictsBuffer != nil && conflictsBuffer.Len() > 0 {
+		err = editor.InteractiveEdit(conflictsBuffer, "yaml")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = models.DeserializeSessionsFromYAML(conflictsBuffer, sessions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, session := range *sessions {
+		err = SessionRepository.Upsert(&session, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return sessions, nil
 }
 
 func init() {

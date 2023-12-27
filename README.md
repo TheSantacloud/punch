@@ -5,7 +5,6 @@ A simple CLI punchcard application
 ## TODO
 
 - [ ] add autosync on dedicated actions (start, finish, edit, remove)
-- [ ] add conflict manager
 - [ ] add report --all-companies
 - [ ] delete day (via delete and via edit)
 - [ ] add tests
@@ -13,6 +12,7 @@ A simple CLI punchcard application
 - [ ] better ux for cli (sessions and companies are not the same, less kubectl-like) 
 - [ ] add github actions
 - [ ] write a complete readme with guides
+- [X] add conflict manager
 - [X] add sync support - push
 - [X] add sync support - pull
 - [X] support multi work periods within one day (and rename day session)

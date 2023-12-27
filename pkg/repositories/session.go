@@ -67,6 +67,26 @@ func (repo *GORMSessionRepository) Insert(session *models.Session, dryRun bool) 
 	return repo.db.Create(&repoSession).Error
 }
 
+func (repo *GORMSessionRepository) Upsert(session *models.Session, dryRun bool) error {
+	repoSession := ToRepoSession(*session)
+	if dryRun {
+		return repo.db.Session(&gorm.Session{DryRun: true}).Save(&repoSession).Error
+	}
+
+	if session.ID == nil {
+		var existingByDetails RepoSession
+		detailResult := repo.db.Where("start = ? AND company_name = ?",
+			repoSession.Start,
+			repoSession.CompanyName).First(&existingByDetails)
+
+		if detailResult.Error != nil {
+			session.ID = existingByDetails.ID
+		}
+	}
+
+	return repo.db.Save(&repoSession).Error
+}
+
 func (repo *GORMSessionRepository) GetSessionByID(id uint32) (*models.Session, error) {
 	var repoSession RepoSession
 	err := repo.db.Preload("Company").Where("id = ?", id).First(&repoSession).Error
@@ -216,16 +236,16 @@ func ToRepoSession(session models.Session) RepoSession {
 }
 
 func ToDomainSession(repoSession RepoSession) models.Session {
-	startTime := repoSession.Start.Local()
+	startTime := repoSession.Start
 	var endTime *time.Time
 	if repoSession.End != nil {
 		endTime = new(time.Time)
-		*endTime = repoSession.End.Local()
+		*endTime = *repoSession.End
 	}
 	return models.Session{
 		ID:      repoSession.ID,
 		Company: ToDomainCompany(repoSession.Company),
-		Start:   &startTime,
+		Start:   startTime,
 		End:     endTime,
 		Note:    repoSession.Note,
 	}
