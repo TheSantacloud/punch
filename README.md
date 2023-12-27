@@ -4,6 +4,7 @@ A simple CLI punchcard application
 
 ## TODO
 
+- [ ] show only conflicts in the conflict manager yaml
 - [ ] add autosync on dedicated actions (start, finish, edit, remove)
 - [ ] add report --all-companies
 - [ ] delete day (via delete and via edit)
@@ -12,6 +13,7 @@ A simple CLI punchcard application
 - [ ] better ux for cli (sessions and companies are not the same, less kubectl-like) 
 - [ ] add github actions
 - [ ] write a complete readme with guides
+- [X] bugfix: error when sync error with empty end time in the remote
 - [X] add conflict manager
 - [X] add sync support - push
 - [X] add sync support - pull

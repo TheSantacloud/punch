@@ -58,7 +58,7 @@ func (s Session) Equals(session Session) bool {
 
 func (s Session) Conflicts(session Session) bool {
 	return (session.ID != nil && s.ID != nil && *session.ID == *s.ID) &&
-		(((session.End != nil || s.End != nil) && (*s.End != *session.End)) ||
+		(((session.End != nil && s.End != nil) && (*s.End != *session.End)) ||
 			s.Company.Name != session.Company.Name ||
 			s.Note != session.Note ||
 			*s.Start != *session.Start)
@@ -112,12 +112,16 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 		if session.ID != nil {
 			id = fmt.Sprint(*session.ID)
 		}
+		end := ""
+		if session.End != nil {
+			end = session.End.Format("15:04:05")
+		}
 		ed := EditableSession{
 			ID:        id,
 			Company:   session.Company.Name,
 			Date:      session.Start.Format("2006-01-02"),
 			StartTime: session.Start.Format("15:04:05"),
-			EndTime:   session.End.Format("15:04:05"),
+			EndTime:   end,
 			Note:      session.Note,
 		}
 
