@@ -113,7 +113,7 @@ func editSessionSlice(sessions *[]models.Session) error {
 		return err
 	}
 
-	err = models.DeserializeSessionsFromYAML(buf, sessions)
+	err = models.DeserializeSessionsFromYAML(buf, sessions, true)
 	if err != nil {
 		return err
 	}

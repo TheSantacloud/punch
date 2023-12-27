@@ -65,12 +65,44 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 
 	diffString := out.String()
 	replaceToGitDiffStandard(&diffString)
+	onlyDiffsString := keepOnlyDiffs(&diffString)
 
-	return bytes.NewBufferString(diffString), nil
+	return bytes.NewBufferString(onlyDiffsString), nil
 }
 
 func replaceToGitDiffStandard(diffString *string) {
 	*diffString = strings.Replace(*diffString, "#ifndef HEAD", "<<<<<<< HEAD", -1)
 	*diffString = strings.Replace(*diffString, "#else /* HEAD */", "=======", -1)
 	*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
+}
+
+// this is kinda tied to the interactive edit being a yaml, but i dont care for now
+func keepOnlyDiffs(diffString *string) string {
+	lines := strings.Split(*diffString, "\n")
+	var foundDiff bool
+
+	relevantLines := ""
+	currentObjectBuffer := ""
+	foundDiff = false
+
+	for _, line := range lines {
+		currentObjectBuffer += line + "\n"
+		if foundDiff {
+			relevantLines += line + "\n"
+		}
+		if strings.HasPrefix(line, "<<<<<<<") {
+			foundDiff = true
+			relevantLines += currentObjectBuffer
+		}
+		if strings.HasPrefix(line, "---") {
+			foundDiff = false
+			currentObjectBuffer = ""
+		}
+	}
+
+	if strings.HasSuffix(relevantLines, "---\n") {
+		relevantLines = relevantLines[:len(relevantLines)-len("---\n")]
+	}
+
+	return relevantLines
 }

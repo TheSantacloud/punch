@@ -139,7 +139,7 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
+func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session, validateSessions bool) error {
 	decoder := yaml.NewDecoder(buf)
 
 	for {
@@ -186,7 +186,7 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session) error {
 			break
 		}
 
-		if !updated {
+		if !updated && validateSessions {
 			return fmt.Errorf("could not find entry for session ID '%d'", id)
 		}
 	}

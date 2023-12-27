@@ -69,7 +69,7 @@ func pull(source sync.SyncSource) (*[]models.Session, error) {
 		}
 	}
 
-	err = models.DeserializeSessionsFromYAML(conflictsBuffer, sessions)
+	err = models.DeserializeSessionsFromYAML(conflictsBuffer, sessions, false)
 	if err != nil {
 		return nil, err
 	}
