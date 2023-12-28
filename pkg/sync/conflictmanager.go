@@ -64,23 +64,30 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 	}
 
 	diffString := out.String()
+	if strings.Contains(diffString, "#ifndef HEAD") {
+		onlyDiffsString := keepOnlyDiffObjects(&diffString)
+		diffString = onlyDiffsString
+	}
 	replaceToGitDiffStandard(&diffString)
-	onlyDiffsString := keepOnlyDiffObjects(&diffString)
-
-	return bytes.NewBufferString(onlyDiffsString), nil
+	return bytes.NewBufferString(diffString), nil
 }
 
 func replaceToGitDiffStandard(diffString *string) {
-	*diffString = strings.Replace(*diffString, "#ifndef HEAD", "<<<<<<< HEAD", -1)
-	*diffString = strings.Replace(*diffString, "#else /* HEAD */", "=======", -1)
-	*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
+	if strings.Contains(*diffString, "ifdef") {
+		*diffString = strings.Replace(*diffString, "#ifdef HEAD", "<<<<<<< HEAD\n=======", -1)
+		*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
+	} else {
+		*diffString = strings.Replace(*diffString, "#ifndef HEAD", "<<<<<<< HEAD", -1)
+		*diffString = strings.Replace(*diffString, "#else /* HEAD */", "=======", -1)
+		*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
+	}
 }
 
 func keepOnlyDiffObjects(diffString *string) string {
 	objects := strings.Split(*diffString, models.YAML_SERIALIZATION_SEPARATOR)
 	relevantObjects := ""
 	for _, object := range objects {
-		if strings.HasPrefix(object, "<<<<<<<") {
+		if strings.HasPrefix(object, "#ifndef") {
 			relevantObjects += object + models.YAML_SERIALIZATION_SEPARATOR
 		}
 	}
