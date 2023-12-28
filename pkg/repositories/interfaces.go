@@ -9,6 +9,7 @@ type SessionRepository interface {
 	Insert(session *models.Session, dryRun bool) error
 	Upsert(session *models.Session, dryRun bool) error
 	Update(session *models.Session, dryRun bool) error
+	Delete(session *models.Session, dryRun bool) error
 	GetSessionByID(id uint32) (*models.Session, error)
 	GetAllSessions(company models.Company) (*[]models.Session, error)
 	GetAllSessionsBetweenDates(company models.Company, start time.Time, end time.Time) (*[]models.Session, error)

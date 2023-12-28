@@ -63,7 +63,6 @@ var editSessionCmd = &cobra.Command{
 	Short:   "edit a specific session (defaults to latest today)",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: delete functionality
 		var slice *[]models.Session
 		var err error
 		if allCompanies {

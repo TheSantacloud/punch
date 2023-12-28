@@ -154,6 +154,14 @@ func (repo *GORMSessionRepository) Update(session *models.Session, dryRun bool) 
 	return repo.db.Save(&repoSession).Error
 }
 
+func (repo *GORMSessionRepository) Delete(session *models.Session, dryRun bool) error {
+	repoSession := ToRepoSession(*session)
+	if dryRun {
+		return repo.db.Session(&gorm.Session{DryRun: true}).Delete(&repoSession).Error
+	}
+	return repo.db.Delete(&repoSession).Error
+}
+
 func (repo *GORMSessionRepository) GetAllSessions(company models.Company) (*[]models.Session, error) {
 	var repoSessions []RepoSession
 	err := repo.db.Preload("Company").

@@ -71,6 +71,11 @@ func (s Session) Summary() string {
 	earnings := "Earnings: N/A"
 	duration := "Duration: N/A"
 
+	id := "<nil>"
+	if s.ID != nil {
+		id = strconv.Itoa(int(*s.ID))
+	}
+
 	value, err := s.Earnings()
 	if err == nil {
 		duration = s.Duration()
@@ -78,7 +83,7 @@ func (s Session) Summary() string {
 	}
 
 	date := s.Start.Format("2006-01-02")
-	return fmt.Sprintf("%s\t%s\t%s\t%s", date, s.Company.Name, duration, earnings)
+	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", id, date, s.Company.Name, duration, earnings)
 }
 
 func (s Session) Earnings() (float64, error) {
