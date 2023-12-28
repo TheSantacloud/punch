@@ -90,3 +90,20 @@ func keepOnlyDiffObjects(diffString *string) string {
 	}
 	return relevantObjects
 }
+
+func DetectDeletedSessions(sessions *[]models.Session, editedSessions *[]models.Session) []models.Session {
+	deletedSessions := make([]models.Session, 0)
+	for _, session := range *sessions {
+		found := false
+		for _, editedSession := range *editedSessions {
+			if *session.ID == *editedSession.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			deletedSessions = append(deletedSessions, session)
+		}
+	}
+	return deletedSessions
+}

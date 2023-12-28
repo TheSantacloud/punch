@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/dormunis/punch/pkg/editor"
 	"github.com/dormunis/punch/pkg/models"
@@ -85,13 +86,22 @@ func pull(source sync.SyncSource) (*[]models.Session, error) {
 		}
 	}
 
-	err = models.DeserializeSessionsFromYAML(conflictsBuffer, sessions, false)
+	deserializedSessions, err := models.DeserializeSessionsFromYAML(conflictsBuffer)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, session := range *sessions {
+	for _, session := range *deserializedSessions {
 		err = SessionRepository.Upsert(&session, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	deleteSessions := sync.DetectDeletedSessions(sessions, deserializedSessions)
+	for _, session := range deleteSessions {
+		fmt.Println("Deleting session: ", session.String())
+		err = SessionRepository.Delete(&session, false)
 		if err != nil {
 			return nil, err
 		}
