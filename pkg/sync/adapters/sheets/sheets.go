@@ -197,7 +197,7 @@ func (s *Sheet) AddRow(session models.Session) error {
 		Values: [][]interface{}{row},
 	}
 
-	_, err := s.Service.Spreadsheets.Values.Append(s.SpreadsheetId, s.SheetName, valueRange).ValueInputOption("RAW").Do()
+	_, err := s.Service.Spreadsheets.Values.Append(s.SpreadsheetId, s.SheetName, valueRange).ValueInputOption("USER_ENTERED").Do()
 	return err
 }
 
@@ -209,7 +209,7 @@ func (s *Sheet) UpdateRow(record Record) error {
 
 	// Adding one because of the header row
 	rangeToUpdate := fmt.Sprintf("%s!A%d", s.SheetName, record.Row+1)
-	_, err := s.Service.Spreadsheets.Values.Update(s.SpreadsheetId, rangeToUpdate, valueRange).ValueInputOption("RAW").Do()
+	_, err := s.Service.Spreadsheets.Values.Update(s.SpreadsheetId, rangeToUpdate, valueRange).ValueInputOption("USER_ENTERED").Do()
 	return err
 }
 

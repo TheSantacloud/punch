@@ -72,12 +72,7 @@ punch get session 2020-01-01
 punch get session 01-01`,
 	Aliases: []string{"sessions"},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		err := getCompanyIfExists(currentCompanyName)
-		if err != nil {
-			// TODO: support all companies
-			return errors.New("Report on all companies not supported yet")
-		}
-		err = preRunCheckOutput()
+		err := preRunCheckOutput()
 		if err != nil {
 			return err
 		}
@@ -155,11 +150,14 @@ func getRelevatSessions() (*[]models.Session, error) {
 
 	startDate := getStartDate()
 	endDate := getEndDate(startDate)
-	sessions, err := SessionRepository.GetAllSessionsBetweenDates(*currentCompany, startDate, endDate)
+	sessions, err := SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
 	for _, session := range *sessions {
+		if currentCompanyName != "" && session.Company.Name != currentCompanyName {
+			continue
+		}
 		if session.Start.After(startDate) && session.End.Before(endDate) {
 			slice = append(slice, session)
 		}
@@ -189,6 +187,8 @@ func generateView(slice *[]models.Session) (*string, error) {
 		content       string        = ""
 		totalDuration time.Duration = 0
 		totalEarnings float64       = 0
+		companyName   string        = ""
+		currency      string        = ""
 	)
 
 	switch output {
@@ -201,6 +201,9 @@ func generateView(slice *[]models.Session) (*string, error) {
 			totalDuration += session.End.Sub(*session.Start)
 			earnings, _ := session.Earnings()
 			totalEarnings += earnings
+			// TODO: dont get just the latest company, figure out a better print here
+			companyName = session.Company.Name
+			currency = session.Company.Currency
 
 			if session.Start.Day() > lastSessionDate.Day() {
 				lastSessionDate = session.Start
@@ -214,10 +217,10 @@ func generateView(slice *[]models.Session) (*string, error) {
 
 		content += fmt.Sprintf("%s\t%s\t%s\t%.2f %s\n",
 			lastSessionDate.Format("2006-01-02"),
-			currentCompany.Name,
+			companyName,
 			totalDuration,
 			totalEarnings,
-			currentCompany.Currency,
+			currency,
 		)
 	case "csv":
 		if verbose {

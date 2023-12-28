@@ -12,7 +12,7 @@ type SessionRepository interface {
 	Delete(session *models.Session, dryRun bool) error
 	GetSessionByID(id uint32) (*models.Session, error)
 	GetAllSessions(company models.Company) (*[]models.Session, error)
-	GetAllSessionsBetweenDates(company models.Company, start time.Time, end time.Time) (*[]models.Session, error)
+	GetAllSessionsBetweenDates(start time.Time, end time.Time) (*[]models.Session, error)
 	GetAllSessionsAllCompanies() (*[]models.Session, error)
 	GetLatestSessionOnSpecificDate(date time.Time, company models.Company) (*models.Session, error)
 	GetLatestSessionOnSpecificDateAllCompanies(date time.Time) (*[]models.Session, error)

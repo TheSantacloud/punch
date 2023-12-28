@@ -137,7 +137,7 @@ func getSessionSlice(args []string) (*[]models.Session, error) {
 		}
 		startOfDay := timestamp.Truncate(24 * time.Hour)
 		endOfDay := startOfDay.Add(24 * time.Hour)
-		slice, err = SessionRepository.GetAllSessionsBetweenDates(*currentCompany, startOfDay, endOfDay)
+		slice, err = SessionRepository.GetAllSessionsBetweenDates(startOfDay, endOfDay)
 	} else {
 		today := time.Now().Truncate(24 * time.Hour)
 		session, err := SessionRepository.GetLatestSessionOnSpecificDate(today, *currentCompany)
@@ -150,6 +150,17 @@ func getSessionSlice(args []string) (*[]models.Session, error) {
 	if slice != nil && len(*slice) == 0 {
 		return nil, errors.New("no sessions found")
 	}
+
+	if currentCompany != nil {
+		relevantSessions := []models.Session{}
+		for _, session := range *slice {
+			if session.Company.Name != currentCompany.Name {
+				relevantSessions = append(relevantSessions, session)
+			}
+		}
+		slice = &relevantSessions
+	}
+
 	return slice, nil
 }
 

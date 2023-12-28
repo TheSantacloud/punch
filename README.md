@@ -4,13 +4,14 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] add report --all-companies
 - [ ] add tests
 - [ ] add `mockgen -source=pkg/repositories/interfaces.go -destination=tests/mock.go -package=tests` to the pre-commit hook
-- [ ] better ux for cli (sessions and companies are not the same, less kubectl-like) 
 - [ ] add github actions
 - [ ] write a complete readme with guides
 - [ ] change `Company` to the more generic `Client`
+- [ ] better ux for cli (sessions and companies are not the same, less kubectl-like) 
+- [X] keep formatting when syncing spreadsheet remote
+- [X] add report --all-companies
 - [X] delete day (via delete and via edit) - probably requries deserialization refactor
 - [X] add autosync on dedicated actions (start, end, edit, delete)
 - [X] show only conflicts in the conflict manager yaml

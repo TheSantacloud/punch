@@ -181,10 +181,9 @@ func (repo *GORMSessionRepository) GetAllSessions(company models.Company) (*[]mo
 	return &sessions, nil
 }
 
-func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(company models.Company, start time.Time, end time.Time) (*[]models.Session, error) {
+func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(start time.Time, end time.Time) (*[]models.Session, error) {
 	var repoSessions []RepoSession
 	err := repo.db.Preload("Company").
-		Where("company_name = ?", company.Name).
 		Where("start >= ?", start).
 		Where("end < ? OR (end IS NULL OR end = '')", end).
 		Order("start DESC").
