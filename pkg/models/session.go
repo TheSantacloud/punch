@@ -10,6 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	YAML_SERIALIZATION_SEPARATOR = "---\n"
+)
+
 type Session struct {
 	ID      *uint32
 	Company Company
@@ -132,7 +136,7 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 
 		buf.Write(data)
 		if i < len(sessions)-1 {
-			buf.WriteString("---\n")
+			buf.WriteString(YAML_SERIALIZATION_SEPARATOR)
 		}
 	}
 

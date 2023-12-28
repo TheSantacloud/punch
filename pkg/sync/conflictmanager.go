@@ -65,7 +65,7 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 
 	diffString := out.String()
 	replaceToGitDiffStandard(&diffString)
-	onlyDiffsString := keepOnlyDiffs(&diffString)
+	onlyDiffsString := keepOnlyDiffObjects(&diffString)
 
 	return bytes.NewBufferString(onlyDiffsString), nil
 }
@@ -76,33 +76,17 @@ func replaceToGitDiffStandard(diffString *string) {
 	*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
 }
 
-// this is kinda tied to the interactive edit being a yaml, but i dont care for now
-func keepOnlyDiffs(diffString *string) string {
-	lines := strings.Split(*diffString, "\n")
-	var foundDiff bool
-
-	relevantLines := ""
-	currentObjectBuffer := ""
-	foundDiff = false
-
-	for _, line := range lines {
-		currentObjectBuffer += line + "\n"
-		if foundDiff {
-			relevantLines += line + "\n"
-		}
-		if strings.HasPrefix(line, "<<<<<<<") {
-			foundDiff = true
-			relevantLines += currentObjectBuffer
-		}
-		if strings.HasPrefix(line, "---") {
-			foundDiff = false
-			currentObjectBuffer = ""
+func keepOnlyDiffObjects(diffString *string) string {
+	objects := strings.Split(*diffString, models.YAML_SERIALIZATION_SEPARATOR)
+	relevantObjects := ""
+	for _, object := range objects {
+		if strings.HasPrefix(object, "<<<<<<<") {
+			relevantObjects += object + models.YAML_SERIALIZATION_SEPARATOR
 		}
 	}
-
-	if strings.HasSuffix(relevantLines, "---\n") {
-		relevantLines = relevantLines[:len(relevantLines)-len("---\n")]
+	if strings.HasSuffix(relevantObjects, models.YAML_SERIALIZATION_SEPARATOR) {
+		relevantObjects = relevantObjects[:len(relevantObjects)-
+			len(models.YAML_SERIALIZATION_SEPARATOR)]
 	}
-
-	return relevantLines
+	return relevantObjects
 }
