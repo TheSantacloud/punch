@@ -11,19 +11,19 @@ type SessionRepository interface {
 	Update(session *models.Session, dryRun bool) error
 	Delete(session *models.Session, dryRun bool) error
 	GetSessionByID(id uint32) (*models.Session, error)
-	GetAllSessions(company models.Company) (*[]models.Session, error)
+	GetAllSessions(client models.Client) (*[]models.Session, error)
 	GetAllSessionsBetweenDates(start time.Time, end time.Time) (*[]models.Session, error)
-	GetAllSessionsAllCompanies() (*[]models.Session, error)
-	GetLatestSessionOnSpecificDate(date time.Time, company models.Company) (*models.Session, error)
-	GetLatestSessionOnSpecificDateAllCompanies(date time.Time) (*[]models.Session, error)
+	GetAllSessionsAllClients() (*[]models.Session, error)
+	GetLatestSessionOnSpecificDate(date time.Time, client models.Client) (*models.Session, error)
+	GetLatestSessionOnSpecificDateAllClients(date time.Time) (*[]models.Session, error)
 }
 
-type CompanyRepository interface {
-	GetAll() ([]models.Company, error)
-	Insert(company *models.Company) error
-	Delete(company *models.Company) error
-	GetByName(name string) (*models.Company, error)
-	SafeGetByName(name string) (*models.Company, error)
-	Rename(company *models.Company, newName string) error
-	Update(company *models.Company) error
+type ClientRepository interface {
+	GetAll() ([]models.Client, error)
+	Insert(client *models.Client) error
+	Delete(client *models.Client) error
+	GetByName(name string) (*models.Client, error)
+	SafeGetByName(name string) (*models.Client, error)
+	Rename(client *models.Client, newName string) error
+	Update(client *models.Client) error
 }

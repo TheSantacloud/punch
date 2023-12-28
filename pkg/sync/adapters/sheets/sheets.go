@@ -19,7 +19,7 @@ import (
 
 type Columns struct {
 	ID        string
-	Company   string
+	Client    string
 	Date      string
 	StartTime string
 	EndTime   string
@@ -41,7 +41,7 @@ type Record struct {
 
 var (
 	idColumnIndex        int
-	companyColumnIndex   int
+	clientColumnIndex    int
 	dateColumnIndex      int
 	startTimeColumnIndex int
 	endTimeColumnIndex   int
@@ -66,7 +66,7 @@ func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
 		SpreadsheetId: cfg.ID,
 		SheetName:     cfg.SheetName,
 		Columns: Columns{
-			Company:   cfg.Columns.Company,
+			Client:    cfg.Columns.Client,
 			Date:      cfg.Columns.Date,
 			StartTime: cfg.Columns.StartTime,
 			EndTime:   cfg.Columns.EndTime,
@@ -104,15 +104,15 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 }
 
 func (s *Sheet) SessionToRow(session models.Session) []interface{} {
-	maxIdx := max(companyColumnIndex, dateColumnIndex, startTimeColumnIndex,
+	maxIdx := max(clientColumnIndex, dateColumnIndex, startTimeColumnIndex,
 		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
 	row := make([]interface{}, maxIdx)
 	for i := range row {
 		switch i {
 		case idColumnIndex:
 			row[idColumnIndex] = session.ID
-		case companyColumnIndex:
-			row[companyColumnIndex] = session.Company.Name
+		case clientColumnIndex:
+			row[clientColumnIndex] = session.Client.Name
 		case dateColumnIndex:
 			row[dateColumnIndex] = session.Start.Format("02/01/2006")
 		case startTimeColumnIndex:
@@ -181,11 +181,11 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 	}
 
 	session := models.Session{
-		ID:      id,
-		Company: models.Company{Name: row[companyColumnIndex].(string)},
-		Start:   &startTime,
-		End:     endTime,
-		Note:    note,
+		ID:     id,
+		Client: models.Client{Name: row[clientColumnIndex].(string)},
+		Start:  &startTime,
+		End:    endTime,
+		Note:   note,
 	}
 	return &session, nil
 }
@@ -236,8 +236,8 @@ func (s *Sheet) parseHeaders(row []interface{}) {
 		switch column {
 		case s.Columns.ID:
 			idColumnIndex = i
-		case s.Columns.Company:
-			companyColumnIndex = i
+		case s.Columns.Client:
+			clientColumnIndex = i
 		case s.Columns.Date:
 			dateColumnIndex = i
 		case s.Columns.StartTime:

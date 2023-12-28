@@ -37,25 +37,25 @@ var getCmd = &cobra.Command{
 	Short: "Get a resource",
 }
 
-var getCompanyCmd = &cobra.Command{
-	Use:     "company [name]",
-	Short:   "Get a company",
-	Aliases: []string{"companies"},
+var getClientCmd = &cobra.Command{
+	Use:     "client [name]",
+	Short:   "Get a client",
+	Aliases: []string{"clients"},
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 {
-			company, err := CompanyRepository.GetByName(args[0])
+			client, err := ClientRepository.GetByName(args[0])
 			if err != nil {
-				return fmt.Errorf("Unable to get company: %v", err)
+				return fmt.Errorf("Unable to get client: %v", err)
 			}
-			fmt.Println(company.String())
+			fmt.Println(client.String())
 		} else {
-			companies, err := CompanyRepository.GetAll()
+			clients, err := ClientRepository.GetAll()
 			if err != nil {
-				return fmt.Errorf("Unable to get companies: %v", err)
+				return fmt.Errorf("Unable to get clients: %v", err)
 			}
-			for _, company := range companies {
-				fmt.Println(company.String())
+			for _, client := range clients {
+				fmt.Println(client.String())
 			}
 		}
 		return nil
@@ -155,7 +155,7 @@ func getRelevatSessions() (*[]models.Session, error) {
 		return nil, err
 	}
 	for _, session := range *sessions {
-		if currentCompanyName != "" && session.Company.Name != currentCompanyName {
+		if currentClientName != "" && session.Client.Name != currentClientName {
 			continue
 		}
 		if session.Start.After(startDate) && session.End.Before(endDate) {
@@ -187,7 +187,7 @@ func generateView(slice *[]models.Session) (*string, error) {
 		content       string        = ""
 		totalDuration time.Duration = 0
 		totalEarnings float64       = 0
-		companyName   string        = ""
+		clientName    string        = ""
 		currency      string        = ""
 	)
 
@@ -201,9 +201,9 @@ func generateView(slice *[]models.Session) (*string, error) {
 			totalDuration += session.End.Sub(*session.Start)
 			earnings, _ := session.Earnings()
 			totalEarnings += earnings
-			// TODO: dont get just the latest company, figure out a better print here
-			companyName = session.Company.Name
-			currency = session.Company.Currency
+			// TODO: dont get just the latest client, figure out a better print here
+			clientName = session.Client.Name
+			currency = session.Client.Currency
 
 			if session.Start.Day() > lastSessionDate.Day() {
 				lastSessionDate = session.Start
@@ -217,7 +217,7 @@ func generateView(slice *[]models.Session) (*string, error) {
 
 		content += fmt.Sprintf("%s\t%s\t%s\t%.2f %s\n",
 			lastSessionDate.Format("2006-01-02"),
-			companyName,
+			clientName,
 			totalDuration,
 			totalEarnings,
 			currency,
@@ -323,8 +323,8 @@ func init() {
 	currentYear, currentMonth, _ := time.Now().Date()
 	rootCmd.AddCommand(getCmd)
 	getCmd.AddCommand(getSessionCmd)
-	getCmd.AddCommand(getCompanyCmd)
-	getSessionCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	getCmd.AddCommand(getClientCmd)
+	getSessionCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
 	getSessionCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	getSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for a specific week (format: YYYY-WW), leave empty for current week")
 	getSessionCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")

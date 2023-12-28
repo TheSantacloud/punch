@@ -9,11 +9,11 @@ import (
 )
 
 type Session struct {
-	ID      *uint32
-	Company Company
-	Start   *time.Time
-	End     *time.Time
-	Note    string
+	ID     *uint32
+	Client Client
+	Start  *time.Time
+	End    *time.Time
+	Note   string
 }
 
 func (s Session) Matches(session Session) bool {
@@ -24,8 +24,8 @@ func (s Session) Matches(session Session) bool {
 }
 
 func (s Session) String() string {
-	return fmt.Sprintf("Company: %s, Date: %s, Duration: %s",
-		s.Company.Name,
+	return fmt.Sprintf("Client: %s, Date: %s, Duration: %s",
+		s.Client.Name,
 		s.Start.Format("02/01/2006"),
 		s.Duration(),
 	)
@@ -34,21 +34,21 @@ func (s Session) String() string {
 func (s Session) Similar(session Session) bool {
 	return s.Start.Format("02/01/2006 15:04:05") ==
 		session.Start.Format("02/01/2006 15:04:05") &&
-		s.Company.Name == session.Company.Name
+		s.Client.Name == session.Client.Name
 }
 
 func (s Session) Equals(session Session) bool {
 	return (session.ID != nil && s.ID != nil && *session.ID == *s.ID) &&
 		*s.Start == *session.Start &&
 		s.End != nil && session.End != nil && *s.End == *session.End &&
-		s.Company.Name == session.Company.Name &&
+		s.Client.Name == session.Client.Name &&
 		s.Note == session.Note
 }
 
 func (s Session) Conflicts(session Session) bool {
 	return (session.ID != nil && s.ID != nil && *session.ID == *s.ID) &&
 		(((session.End != nil && s.End != nil) && (*s.End != *session.End)) ||
-			s.Company.Name != session.Company.Name ||
+			s.Client.Name != session.Client.Name ||
 			*s.Start != *session.Start)
 }
 
@@ -64,11 +64,11 @@ func (s Session) Summary() string {
 	value, err := s.Earnings()
 	if err == nil {
 		duration = s.Duration()
-		earnings = fmt.Sprintf("%.2f %s", value, s.Company.Currency)
+		earnings = fmt.Sprintf("%.2f %s", value, s.Client.Currency)
 	}
 
 	date := s.Start.Format("2006-01-02")
-	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", id, date, s.Company.Name, duration, earnings)
+	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", id, date, s.Client.Name, duration, earnings)
 }
 
 func (s Session) Earnings() (float64, error) {
@@ -77,7 +77,7 @@ func (s Session) Earnings() (float64, error) {
 	}
 	delta := s.End.Sub(*s.Start)
 	hours := delta.Hours()
-	value := float64(s.Company.PPH) * hours
+	value := float64(s.Client.PPH) * hours
 	return value, nil
 }
 
@@ -105,7 +105,7 @@ func (s Session) SerializeYAML() (*[]byte, error) {
 	}
 	ed := EditableSession{
 		ID:        id,
-		Company:   s.Company.Name,
+		Client:    s.Client.Name,
 		Date:      s.Start.Format("2006-01-02"),
 		StartTime: s.Start.Format("15:04:05"),
 		EndTime:   end,

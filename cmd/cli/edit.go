@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	allCompanies  bool
+	allClients    bool
 	dateString    string
 	approveDelete bool
 )
@@ -24,7 +25,7 @@ var editCmd = &cobra.Command{
 	Use:   "edit [time]",
 	Short: "interactively edit work sessions",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		err := getCompanyIfExists(currentCompanyName)
+		err := getClientIfExists(currentClientName)
 		if err != nil {
 			return err
 		}
@@ -32,17 +33,17 @@ var editCmd = &cobra.Command{
 	},
 }
 
-var editCompanyCmd = &cobra.Command{
-	Use:     "company [name]",
-	Aliases: []string{"companies"},
-	Short:   "edit a specific company",
+var editClientCmd = &cobra.Command{
+	Use:     "client [name]",
+	Aliases: []string{"clients"},
+	Short:   "edit a specific client",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		company, err := CompanyRepository.GetByName(args[0])
+		client, err := ClientRepository.GetByName(args[0])
 		if err != nil {
 			return err
 		}
-		buf, err := company.Serialize()
+		buf, err := client.Serialize()
 		if err != nil {
 			return err
 		}
@@ -50,13 +51,13 @@ var editCompanyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var updateCompany models.Company
-		err = models.DeserializeCompanyFromYAML(buf, &updateCompany)
+		var updateClient models.Client
+		err = models.DeserializeClientFromYAML(buf, &updateClient)
 		if err != nil {
 			return err
 		}
-		CompanyRepository.Update(&updateCompany)
-		fmt.Printf("Updated company %s\n", updateCompany.Name)
+		ClientRepository.Update(&updateClient)
+		fmt.Printf("Updated client %s\n", updateClient.Name)
 		return nil
 	},
 }
@@ -66,8 +67,8 @@ var editSessionCmd = &cobra.Command{
 	Aliases: []string{"sessions"},
 	Short:   "edit a specific session (defaults to latest today)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if (allCompanies && len(args) > 0) ||
-			(allCompanies && dateString != "") ||
+		if (allClients && len(args) > 0) ||
+			(allClients && dateString != "") ||
 			(len(args) > 0 && dateString != "") {
 			return fmt.Errorf("Cannot specify both --all and --date or session id")
 		}
@@ -94,15 +95,15 @@ var editSessionCmd = &cobra.Command{
 		fmt.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
 
 		deletedSessions := sync.DetectDeletedSessions(sessions, &editedSessions)
-		if verifyDeletion(deletedSessions) {
+		if len(deletedSessions) > 0 && verifyDeletion(deletedSessions) {
 			for _, session := range deletedSessions {
 				err = SessionRepository.Delete(&session, false)
 				if err != nil {
 					fmt.Printf("Unable to delete session %s: %v\n", session.String(), err)
 				}
 			}
+			fmt.Printf("Deleted %d session(s)\n", len(deletedSessions))
 		}
-		fmt.Printf("Deleted %d session(s)\n", len(deletedSessions))
 
 		if slices.Contains(Config.Settings.AutoSync, "edit") {
 			Sync()
@@ -115,8 +116,8 @@ func getSessionSlice(args []string) (*[]models.Session, error) {
 	var slice *[]models.Session
 	var err error
 
-	if allCompanies {
-		slice, err = SessionRepository.GetAllSessionsAllCompanies()
+	if allClients {
+		slice, err = SessionRepository.GetAllSessionsAllClients()
 		if err != nil {
 			return nil, err
 		}
@@ -139,8 +140,8 @@ func getSessionSlice(args []string) (*[]models.Session, error) {
 		endOfDay := startOfDay.Add(24 * time.Hour)
 		slice, err = SessionRepository.GetAllSessionsBetweenDates(startOfDay, endOfDay)
 	} else {
-		today := time.Now().Truncate(24 * time.Hour)
-		session, err := SessionRepository.GetLatestSessionOnSpecificDate(today, *currentCompany)
+		today := time.Now()
+		session, err := SessionRepository.GetLatestSessionOnSpecificDate(today, *currentClient)
 		if err != nil {
 			return nil, err
 		}
@@ -151,15 +152,9 @@ func getSessionSlice(args []string) (*[]models.Session, error) {
 		return nil, errors.New("no sessions found")
 	}
 
-	if currentCompany != nil {
-		relevantSessions := []models.Session{}
-		for _, session := range *slice {
-			if session.Company.Name != currentCompany.Name {
-				relevantSessions = append(relevantSessions, session)
-			}
-		}
-		slice = &relevantSessions
-	}
+	sort.SliceStable(*slice, func(i, j int) bool {
+		return (*slice)[i].Start.Before(*(*slice)[j].Start)
+	})
 
 	return slice, nil
 }
@@ -200,9 +195,9 @@ func verifyDeletion(deleted []models.Session) bool {
 func init() {
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editSessionCmd)
-	editCmd.AddCommand(editCompanyCmd)
-	editSessionCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	editCmd.AddCommand(editClientCmd)
+	editSessionCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
 	editSessionCmd.Flags().StringVarP(&dateString, "date", "d", "", "Specify a specific date to edit sessions for")
-	editSessionCmd.Flags().BoolVarP(&allCompanies, "all", "a", false, "Edit all companies")
+	editSessionCmd.Flags().BoolVarP(&allClients, "all", "a", false, "Edit all clients")
 	editSessionCmd.Flags().BoolVarP(&approveDelete, "yes", "y", false, "Approve deletion of sessions automatically")
 }

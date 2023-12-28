@@ -19,11 +19,11 @@ var addCmd = &cobra.Command{
 	Short: "add a new resource",
 }
 
-var addCompanyCmd = &cobra.Command{
-	Use:   "company [name] [price]",
-	Short: "add a company",
-	Long: `Add a company to the database. The price is the amount of money,  
-    in your set currency, that the company pays you per hour.`,
+var addClientCmd = &cobra.Command{
+	Use:   "client [name] [price]",
+	Short: "add a client",
+	Long: `Add a client to the database. The price is the amount of money,  
+    in your set currency, that the client pays you per hour.`,
 	Args: cobra.ExactArgs(2),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if currency == "" && Config.Settings.Currency == "" {
@@ -39,21 +39,21 @@ var addCompanyCmd = &cobra.Command{
 		if err != nil || price < 0 {
 			log.Fatalf("invalid price %s", args[1])
 		}
-		newCompany := models.Company{
+		newClient := models.Client{
 			Name:     name,
 			PPH:      uint16(price),
 			Currency: currency,
 		}
-		err = CompanyRepository.Insert(&newCompany)
-		if err != nil && err != repositories.ErrCompanyNotFound {
-			log.Fatalf("unable to insert company: %v", err)
+		err = ClientRepository.Insert(&newClient)
+		if err != nil && err != repositories.ErrClientNotFound {
+			log.Fatalf("unable to insert client: %v", err)
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(addCmd)
-	addCmd.AddCommand(addCompanyCmd)
-	addCompanyCmd.Flags().StringVar(&currency, "currency", "",
-		"currency in which the company pays (defaults to USD)")
+	addCmd.AddCommand(addClientCmd)
+	addClientCmd.Flags().StringVar(&currency, "currency", "",
+		"currency in which the client pays (defaults to USD)")
 }

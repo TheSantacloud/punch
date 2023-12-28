@@ -15,12 +15,12 @@ var (
 )
 
 type RepoSession struct {
-	ID          *uint32 `gorm:"primaryKey;autoIncrement"`
-	CompanyName string  `gorm:"foreignKey:Name"`
-	Start       *time.Time
-	End         *time.Time
-	Note        string
-	Company     RepoCompany `gorm:"foreignKey:CompanyName;references:Name"`
+	ID         *uint32 `gorm:"primaryKey;autoIncrement"`
+	ClientName string  `gorm:"foreignKey:Name"`
+	Start      *time.Time
+	End        *time.Time
+	Note       string
+	Client     RepoClient `gorm:"foreignKey:ClientName;references:Name"`
 }
 
 type GORMSessionRepository struct {
@@ -46,9 +46,9 @@ func (repo *GORMSessionRepository) Insert(session *models.Session, dryRun bool) 
 	}
 
 	var existingByDetails RepoSession
-	detailResult := repo.db.Where("start = ? AND company_name = ?",
+	detailResult := repo.db.Where("start = ? AND client_name = ?",
 		repoSession.Start,
-		repoSession.CompanyName).First(&existingByDetails)
+		repoSession.ClientName).First(&existingByDetails)
 
 	if detailResult.Error == nil && (session.ID == nil || existingByDetails.ID != session.ID) {
 		return ConflictingIdsError
@@ -75,9 +75,9 @@ func (repo *GORMSessionRepository) Upsert(session *models.Session, dryRun bool) 
 
 	if session.ID == nil {
 		var existingByDetails RepoSession
-		detailResult := repo.db.Where("start = ? AND company_name = ?",
+		detailResult := repo.db.Where("start = ? AND client_name = ?",
 			repoSession.Start,
-			repoSession.CompanyName).First(&existingByDetails)
+			repoSession.ClientName).First(&existingByDetails)
 
 		if detailResult.Error != nil {
 			session.ID = existingByDetails.ID
@@ -89,7 +89,7 @@ func (repo *GORMSessionRepository) Upsert(session *models.Session, dryRun bool) 
 
 func (repo *GORMSessionRepository) GetSessionByID(id uint32) (*models.Session, error) {
 	var repoSession RepoSession
-	err := repo.db.Preload("Company").Where("id = ?", id).First(&repoSession).Error
+	err := repo.db.Preload("Client").Where("id = ?", id).First(&repoSession).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrSessionNotFound
@@ -100,12 +100,12 @@ func (repo *GORMSessionRepository) GetSessionByID(id uint32) (*models.Session, e
 	return &domainSession, nil
 }
 
-func (repo *GORMSessionRepository) GetLatestSessionOnSpecificDateAllCompanies(date time.Time) (*[]models.Session, error) {
+func (repo *GORMSessionRepository) GetLatestSessionOnSpecificDateAllClients(date time.Time) (*[]models.Session, error) {
 	var repoSessions []RepoSession
 	startOfDay := date.Truncate(24 * time.Hour)
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	err := repo.db.Preload("Company").
+	err := repo.db.Preload("Client").
 		Where("start >= ? AND start < ?",
 			startOfDay,
 			endOfDay).
@@ -124,16 +124,16 @@ func (repo *GORMSessionRepository) GetLatestSessionOnSpecificDateAllCompanies(da
 	return &sessions, nil
 }
 
-func (repo *GORMSessionRepository) GetLatestSessionOnSpecificDate(date time.Time, company models.Company) (*models.Session, error) {
+func (repo *GORMSessionRepository) GetLatestSessionOnSpecificDate(date time.Time, client models.Client) (*models.Session, error) {
 	var session RepoSession
 	startOfDay := date.Truncate(24 * time.Hour)
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	err := repo.db.Preload("Company").
-		Where("start >= ? AND start < ? AND company_name = ?",
+	err := repo.db.Preload("Client").
+		Where("start >= ? AND start < ? AND client_name = ?",
 			startOfDay,
 			endOfDay,
-			company.Name).
+			client.Name).
 		Order("start DESC").
 		First(&session).Error
 	if err != nil {
@@ -162,10 +162,10 @@ func (repo *GORMSessionRepository) Delete(session *models.Session, dryRun bool) 
 	return repo.db.Delete(&repoSession).Error
 }
 
-func (repo *GORMSessionRepository) GetAllSessions(company models.Company) (*[]models.Session, error) {
+func (repo *GORMSessionRepository) GetAllSessions(client models.Client) (*[]models.Session, error) {
 	var repoSessions []RepoSession
-	err := repo.db.Preload("Company").
-		Where("company_name = ?", company.Name).
+	err := repo.db.Preload("Client").
+		Where("client_name = ?", client.Name).
 		Order("start DESC").
 		Find(&repoSessions).Error
 	if err != nil {
@@ -183,7 +183,7 @@ func (repo *GORMSessionRepository) GetAllSessions(company models.Company) (*[]mo
 
 func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(start time.Time, end time.Time) (*[]models.Session, error) {
 	var repoSessions []RepoSession
-	err := repo.db.Preload("Company").
+	err := repo.db.Preload("Client").
 		Where("start >= ?", start).
 		Where("end < ? OR (end IS NULL OR end = '')", end).
 		Order("start DESC").
@@ -202,9 +202,9 @@ func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(start time.Time, e
 	return &sessions, nil
 }
 
-func (repo *GORMSessionRepository) GetAllSessionsAllCompanies() (*[]models.Session, error) {
+func (repo *GORMSessionRepository) GetAllSessionsAllClients() (*[]models.Session, error) {
 	var repoSessions []RepoSession
-	err := repo.db.Preload("Company").
+	err := repo.db.Preload("Client").
 		Order("start DESC").
 		Find(&repoSessions).Error
 	if err != nil {
@@ -221,9 +221,9 @@ func (repo *GORMSessionRepository) GetAllSessionsAllCompanies() (*[]models.Sessi
 }
 
 func ToRepoSession(session models.Session) RepoSession {
-	var companyName string
-	if session.Company.Name != "" {
-		companyName = session.Company.Name
+	var clientName string
+	if session.Client.Name != "" {
+		clientName = session.Client.Name
 	}
 
 	startTime := session.Start.Truncate(time.Second)
@@ -233,12 +233,12 @@ func ToRepoSession(session models.Session) RepoSession {
 	}
 
 	return RepoSession{
-		ID:          session.ID,
-		CompanyName: companyName,
-		Start:       &startTime,
-		End:         endTime,
-		Note:        session.Note,
-		Company:     *ToRepoCompany(session.Company),
+		ID:         session.ID,
+		ClientName: clientName,
+		Start:      &startTime,
+		End:        endTime,
+		Note:       session.Note,
+		Client:     *ToRepoClient(session.Client),
 	}
 }
 
@@ -250,10 +250,10 @@ func ToDomainSession(repoSession RepoSession) models.Session {
 		*endTime = *repoSession.End
 	}
 	return models.Session{
-		ID:      repoSession.ID,
-		Company: ToDomainCompany(repoSession.Company),
-		Start:   startTime,
-		End:     endTime,
-		Note:    repoSession.Note,
+		ID:     repoSession.ID,
+		Client: ToDomainClient(repoSession.Client),
+		Start:  startTime,
+		End:    endTime,
+		Note:   repoSession.Note,
 	}
 }

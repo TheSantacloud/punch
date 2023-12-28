@@ -13,7 +13,7 @@ var startCmd = &cobra.Command{
 	Short: "Starts a new work session",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(currentCompanyName)
+		return getClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		timestamp, err := getParsedTimeFromArgs(args)
@@ -21,7 +21,7 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		session, err := Puncher.StartSession(*currentCompany, timestamp, punchMessage)
+		session, err := Puncher.StartSession(*currentClient, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ var endCmd = &cobra.Command{
 	Short: "End a work session",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(currentCompanyName)
+		return getClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		timestamp, err := getParsedTimeFromArgs(args)
@@ -47,7 +47,7 @@ var endCmd = &cobra.Command{
 			return err
 		}
 
-		session, _ := Puncher.EndSession(*currentCompany, timestamp, punchMessage)
+		session, _ := Puncher.EndSession(*currentClient, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}
@@ -74,14 +74,14 @@ func printEOD(session *models.Session) error {
 		session.End.Format("15:04:05"),
 		duration,
 		earnings,
-		session.Company.Currency)
+		session.Client.Currency)
 	return nil
 }
 
 func init() {
-	startCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	startCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
 	startCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
-	endCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	endCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
 	endCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(endCmd)

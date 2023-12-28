@@ -70,21 +70,21 @@ func parseTime(input string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("invalid time format")
 }
 
-func getCompanyIfExists(name string) error {
-	defaultCompany := viper.GetString("settings.default_company")
-	if defaultCompany != "" && currentCompanyName == "" {
-		currentCompanyName = defaultCompany
+func getClientIfExists(name string) error {
+	defaultClient := viper.GetString("settings.default_client")
+	if defaultClient != "" && currentClientName == "" {
+		currentClientName = defaultClient
 	}
 	var err error
-	currentCompany, err = CompanyRepository.SafeGetByName(currentCompanyName)
+	currentClient, err = ClientRepository.SafeGetByName(currentClientName)
 	if err != nil {
 		return err
 	}
-	if currentCompany == nil && currentCompanyName != defaultCompany {
-		return fmt.Errorf("Company `%s` does not exist", currentCompanyName)
-	} else if currentCompany == nil && currentCompanyName == defaultCompany {
-		return fmt.Errorf("Set `%s` as default company, but it doesn't exists",
-			currentCompanyName)
+	if currentClient == nil && currentClientName != defaultClient {
+		return fmt.Errorf("Client `%s` does not exist", currentClientName)
+	} else if currentClient == nil && currentClientName == defaultClient {
+		return fmt.Errorf("Set `%s` as default client, but it doesn't exists",
+			currentClientName)
 	}
 	return nil
 }

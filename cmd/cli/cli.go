@@ -21,17 +21,17 @@ import (
 var (
 	Config            *config.Config
 	SessionRepository repositories.SessionRepository
-	CompanyRepository repositories.CompanyRepository
+	ClientRepository  repositories.ClientRepository
 	Puncher           *puncher.Puncher
 	Source            *sync.SyncSource
 )
 
 // cli flags
 var (
-	currentCompanyName string
-	currentCompany     *models.Company
-	punchMessage       string
-	verbose            bool
+	currentClientName string
+	currentClient     *models.Client
+	punchMessage      string
+	verbose           bool
 )
 
 var rootCmd = &cobra.Command{
@@ -40,10 +40,10 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getCompanyIfExists(currentCompanyName)
+		return getClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		session, err := Puncher.ToggleCheckInOut(currentCompany, punchMessage)
+		session, err := Puncher.ToggleCheckInOut(currentClient, punchMessage)
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ var configCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&currentCompanyName, "company", "c", "", "Specify the company name")
+	rootCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify a client's name")
 	rootCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
 	rootCmd.AddCommand(configCmd)
 }
@@ -96,7 +96,7 @@ func Execute(cfg *config.Config) error {
 	}
 
 	SessionRepository = repositories.NewGORMSessionRepository(db)
-	CompanyRepository = repositories.NewGORMCompanyRepository(db)
+	ClientRepository = repositories.NewGORMClientRepository(db)
 	Puncher = puncher.NewPuncher(SessionRepository)
 
 	if Config.Settings.DefaultRemote != "" {

@@ -25,32 +25,32 @@ func NewPuncher(repo repositories.SessionRepository) *Puncher {
 	}
 }
 
-func (p *Puncher) ToggleCheckInOut(company *models.Company, note string) (*models.Session, error) {
+func (p *Puncher) ToggleCheckInOut(client *models.Client, note string) (*models.Session, error) {
 	today := time.Now()
-	session, err := p.repo.GetLatestSessionOnSpecificDate(today, *company)
+	session, err := p.repo.GetLatestSessionOnSpecificDate(today, *client)
 	switch err {
 	case nil:
 		if session.End != nil {
-			return p.StartSession(*company, today, note)
+			return p.StartSession(*client, today, note)
 		} else {
-			return p.EndSession(*company, today, note)
+			return p.EndSession(*client, today, note)
 		}
 	case repositories.ErrSessionNotFound:
-		return p.StartSession(*company, today, note)
+		return p.StartSession(*client, today, note)
 	default:
 		return nil, err
 	}
 }
 
-func (p *Puncher) StartSession(company models.Company, timestamp time.Time, note string) (*models.Session, error) {
-	fetchedSession, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, company)
+func (p *Puncher) StartSession(client models.Client, timestamp time.Time, note string) (*models.Session, error) {
+	fetchedSession, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, client)
 	if err != repositories.ErrSessionNotFound && fetchedSession.End == nil {
 		return nil, ErrSessionAlreadyStarted
 	}
 	session := models.Session{
-		Company: company,
-		Start:   &timestamp,
-		Note:    note,
+		Client: client,
+		Start:  &timestamp,
+		Note:   note,
 	}
 	err = p.repo.Insert(&session, false)
 	if err != nil {
@@ -59,8 +59,8 @@ func (p *Puncher) StartSession(company models.Company, timestamp time.Time, note
 	return &session, nil
 }
 
-func (p *Puncher) EndSession(company models.Company, timestamp time.Time, note string) (*models.Session, error) {
-	session, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, company)
+func (p *Puncher) EndSession(client models.Client, timestamp time.Time, note string) (*models.Session, error) {
+	session, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, client)
 	switch err {
 	case nil:
 		if session.End != nil {

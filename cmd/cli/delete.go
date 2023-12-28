@@ -13,17 +13,17 @@ var deleteCmd = &cobra.Command{
 	Short: "delete command",
 }
 
-var deleteCompanyCmd = &cobra.Command{
-	Use:     "company [name]",
-	Aliases: []string{"companies"},
-	Short:   "delete a specific company",
+var deleteClientCmd = &cobra.Command{
+	Use:     "client [name]",
+	Aliases: []string{"clients"},
+	Short:   "delete a specific client",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		company, err := CompanyRepository.GetByName(args[0])
+		client, err := ClientRepository.GetByName(args[0])
 		if err != nil {
 			return err
 		}
-		return CompanyRepository.Delete(company)
+		return ClientRepository.Delete(client)
 	},
 }
 
@@ -60,5 +60,5 @@ var deleteSessionCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deleteSessionCmd)
-	deleteCmd.AddCommand(deleteCompanyCmd)
+	deleteCmd.AddCommand(deleteClientCmd)
 }

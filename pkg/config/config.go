@@ -16,11 +16,11 @@ type Config struct {
 }
 
 type Settings struct {
-	Editor         string
-	Currency       string   `mapstructure:"default_currency"`
-	DefaultCompany string   `mapstructure:"default_company"`
-	DefaultRemote  string   `mapstructure:"default_remote"`
-	AutoSync       []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit delete"`
+	Editor        string
+	Currency      string   `mapstructure:"default_currency"`
+	DefaultClient string   `mapstructure:"default_client"`
+	DefaultRemote string   `mapstructure:"default_remote"`
+	AutoSync      []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit delete"`
 }
 
 type Database struct {
@@ -38,7 +38,7 @@ type SpreadsheetRemote struct {
 	SheetName string   `mapstructure:"sheet_name" validate:"required"`
 	Columns   struct { // TODO: this is duplicated in sheet.go, find a better way
 		ID        string `validate:"required"`
-		Company   string `validate:"required"`
+		Client    string `validate:"required"`
 		Date      string `validate:"required"`
 		StartTime string `mapstructure:"start_time" validate:"required"`
 		EndTime   string `mapstructure:"end_time" validate:"required"`

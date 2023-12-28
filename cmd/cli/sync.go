@@ -68,7 +68,7 @@ func pull(source sync.SyncSource) (*[]models.Session, error) {
 		return nil, err
 	}
 
-	sessions, err := SessionRepository.GetAllSessionsAllCompanies()
+	sessions, err := SessionRepository.GetAllSessionsAllClients()
 	if err != nil {
 		return nil, err
 	}

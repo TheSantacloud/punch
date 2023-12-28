@@ -16,7 +16,7 @@ const (
 
 type EditableSession struct {
 	ID        string `yaml:"id"`
-	Company   string `yaml:"company"`
+	Client    string `yaml:"client"`
 	Date      string `yaml:"date"`
 	StartTime string `yaml:"start_time"`
 	EndTime   string `yaml:"end_time"`
@@ -30,7 +30,7 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	}
 	uintId := uint32(id)
 
-	company := Company{Name: ed.Company}
+	client := Client{Name: ed.Client}
 	startTime, err := time.Parse("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date)
 	if err != nil {
 		return nil, err
@@ -45,11 +45,11 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	}
 
 	return &Session{
-		ID:      &uintId,
-		Company: company,
-		Start:   &startTime,
-		End:     &endTime,
-		Note:    ed.Note,
+		ID:     &uintId,
+		Client: client,
+		Start:  &startTime,
+		End:    &endTime,
+		Note:   ed.Note,
 	}, nil
 }
 
@@ -57,7 +57,7 @@ func SerializeSessionsToYAML(sessions []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString("# Change either the `start_time` or `end_time` fields to edit the day\n")
-	buf.WriteString("# The `id`, `company` and `date` fields are for reference only\n")
+	buf.WriteString("# The `id`, `client` and `date` fields are for reference only\n")
 	buf.WriteString("\n")
 	for i, session := range sessions {
 		serialized, err := session.SerializeYAML()
@@ -156,10 +156,10 @@ func updateSession(ed EditableSession, session *Session) error {
 func SerializeSessionsToCSV(sessions []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString("company,date,duration\n")
+	buf.WriteString("client,date,duration\n")
 	for _, session := range sessions {
 		buf.WriteString(fmt.Sprintf("%s,%s,%s\n",
-			session.Company.Name,
+			session.Client.Name,
 			session.Start.Format("2006-01-02"),
 			session.Duration(),
 		))
@@ -171,18 +171,18 @@ func SerializeSessionsToCSV(sessions []Session) (*bytes.Buffer, error) {
 func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString("company,date,start_time,end_time,hours,earnings,currency,note\n")
+	buf.WriteString("client,date,start_time,end_time,hours,earnings,currency,note\n")
 	for _, session := range session {
 		earnings, _ := session.Earnings()
 
 		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%.2f,%s,%s\n",
-			session.Company.Name,
+			session.Client.Name,
 			session.Start.Format("2006-01-02"),
 			session.Start.Format("15:04:05"),
 			session.End.Format("15:04:05"),
 			session.Duration(),
 			earnings,
-			session.Company.Currency,
+			session.Client.Currency,
 			session.Note,
 		))
 	}

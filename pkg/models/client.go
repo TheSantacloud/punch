@@ -7,17 +7,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Company struct {
+type Client struct {
 	Name     string `yaml:"name"`
 	PPH      uint16 `yaml:"pph"`
 	Currency string `yaml:"currency"`
 }
 
-func (c Company) String() string {
+func (c Client) String() string {
 	return fmt.Sprintf("%s\t%d %s", c.Name, c.PPH, c.Currency)
 }
 
-func (c *Company) Serialize() (*bytes.Buffer, error) {
+func (c *Client) Serialize() (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	data, err := yaml.Marshal(c)
@@ -30,9 +30,9 @@ func (c *Company) Serialize() (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-func DeserializeCompanyFromYAML(buf *bytes.Buffer, company *Company) error {
+func DeserializeClientFromYAML(buf *bytes.Buffer, client *Client) error {
 	decoder := yaml.NewDecoder(buf)
-	err := decoder.Decode(&company)
+	err := decoder.Decode(&client)
 	if err != nil {
 		return err
 	}
