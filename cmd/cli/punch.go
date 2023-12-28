@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/dormunis/punch/pkg/models"
 	"github.com/spf13/cobra"
@@ -25,6 +26,10 @@ var startCmd = &cobra.Command{
 			return err
 		}
 		printBOD(session)
+
+		if slices.Contains(Config.Settings.AutoSync, "start") {
+			Sync()
+		}
 		return nil
 	},
 }
@@ -47,6 +52,10 @@ var endCmd = &cobra.Command{
 			return err
 		}
 		printEOD(session)
+
+		if slices.Contains(Config.Settings.AutoSync, "end") {
+			Sync()
+		}
 		return nil
 	},
 }

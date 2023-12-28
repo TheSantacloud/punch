@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/dormunis/punch/pkg/editor"
@@ -98,6 +99,11 @@ var editSessionCmd = &cobra.Command{
 			}
 		}
 		fmt.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
+
+		fmt.Println(Config.Settings.AutoSync)
+		if slices.Contains(Config.Settings.AutoSync, "edit") {
+			Sync()
+		}
 		return nil
 	},
 }

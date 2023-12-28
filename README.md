@@ -4,15 +4,15 @@ A simple CLI punchcard application
 
 ## TODO
 
-- [ ] add autosync on dedicated actions (start, finish, edit, remove)
-- [ ] add report --all-companies
 - [ ] delete day (via delete and via edit) - probably requries deserialization refactor
+- [ ] add report --all-companies
 - [ ] add tests
 - [ ] add `mockgen -source=pkg/repositories/interfaces.go -destination=tests/mock.go -package=tests` to the pre-commit hook
 - [ ] better ux for cli (sessions and companies are not the same, less kubectl-like) 
 - [ ] add github actions
 - [ ] write a complete readme with guides
 - [ ] change `Company` to the more generic `Client`
+- [X] add autosync on dedicated actions (start, end, edit, delete)
 - [X] show only conflicts in the conflict manager yaml
 - [X] bugfix: error when sync error with empty end time in the remote
 - [X] add conflict manager

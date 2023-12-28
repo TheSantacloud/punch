@@ -64,7 +64,6 @@ func (s Session) Conflicts(session Session) bool {
 	return (session.ID != nil && s.ID != nil && *session.ID == *s.ID) &&
 		(((session.End != nil && s.End != nil) && (*s.End != *session.End)) ||
 			s.Company.Name != session.Company.Name ||
-			s.Note != session.Note ||
 			*s.Start != *session.Start)
 }
 

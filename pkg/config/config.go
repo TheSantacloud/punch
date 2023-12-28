@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-playground/validator"
 	"github.com/spf13/viper"
 )
 
@@ -19,7 +20,7 @@ type Settings struct {
 	Currency       string   `mapstructure:"default_currency"`
 	DefaultCompany string   `mapstructure:"default_company"`
 	DefaultRemote  string   `mapstructure:"default_remote"`
-	AutoSync       []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit"`
+	AutoSync       []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit delete"`
 }
 
 type Database struct {
@@ -122,7 +123,23 @@ func loadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	validate := validator.New()
+	validate.RegisterValidation("autosync_requires_default_remote", validateAutoSync)
+
+	err := validate.Struct(conf)
+	if err != nil {
+		fmt.Printf("Validation errors: %v\n", err)
+	}
+
 	return conf, nil
+}
+
+func validateAutoSync(fl validator.FieldLevel) bool {
+	settings := fl.Parent().Interface().(Settings)
+	autoSync := settings.AutoSync
+	defaultRemote := settings.DefaultRemote
+
+	return len(autoSync) == 0 || (len(autoSync) > 0 && defaultRemote != "")
 }
 
 func unmarshalRemotes(remoteMap map[string]interface{}, conf *Config) error {

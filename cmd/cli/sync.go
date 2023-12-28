@@ -16,34 +16,50 @@ var (
 var syncCmd = &cobra.Command{
 	Use:   "sync [remote]",
 	Short: "sync sessions with remote",
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		remote, ok := Config.Remotes[args[0]]
+	Args:  cobra.MaximumNArgs(1),
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		var remoteString string
+		Source = new(sync.SyncSource)
+		if len(args) > 0 {
+			remoteString = args[0]
+		} else if len(Config.Settings.DefaultRemote) > 0 {
+			remoteString = Config.Settings.DefaultRemote
+		} else {
+			return errors.New("Must specify remote")
+		}
+		remote, ok := Config.Remotes[remoteString]
 		if !ok {
 			return errors.New("Remote not found")
 		}
 
-		source, err := sync.NewSource(remote, SessionRepository)
+		var err error
+		*Source, err = sync.NewSource(remote, SessionRepository)
 		if err != nil {
 			return err
 		}
-
-		resolvedSessions, err := pull(source)
-		if err != nil {
-			return err
-		}
-
-		if pullOnly {
-			return nil
-		}
-
-		err = source.Push(resolvedSessions)
-		if err != nil {
-			return err
-		}
-
 		return nil
 	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return Sync()
+	},
+}
+
+func Sync() error {
+	resolvedSessions, err := pull(*Source)
+	if err != nil {
+		return err
+	}
+
+	if pullOnly {
+		return nil
+	}
+
+	err = (*Source).Push(resolvedSessions)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func pull(source sync.SyncSource) (*[]models.Session, error) {

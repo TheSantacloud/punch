@@ -1,15 +1,18 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 
 	"github.com/dormunis/punch/pkg/config"
 	"github.com/dormunis/punch/pkg/database"
 	"github.com/dormunis/punch/pkg/models"
 	"github.com/dormunis/punch/pkg/puncher"
 	"github.com/dormunis/punch/pkg/repositories"
+	"github.com/dormunis/punch/pkg/sync"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,6 +23,7 @@ var (
 	SessionRepository repositories.SessionRepository
 	CompanyRepository repositories.CompanyRepository
 	Puncher           *puncher.Puncher
+	Source            *sync.SyncSource
 )
 
 // cli flags
@@ -46,8 +50,14 @@ var rootCmd = &cobra.Command{
 
 		if session.End != nil {
 			printEOD(session)
+			if slices.Contains(Config.Settings.AutoSync, "end") {
+				Sync()
+			}
 		} else {
 			printBOD(session)
+			if slices.Contains(Config.Settings.AutoSync, "start") {
+				Sync()
+			}
 		}
 		return nil
 	},
@@ -88,6 +98,20 @@ func Execute(cfg *config.Config) error {
 	SessionRepository = repositories.NewGORMSessionRepository(db)
 	CompanyRepository = repositories.NewGORMCompanyRepository(db)
 	Puncher = puncher.NewPuncher(SessionRepository)
+
+	if Config.Settings.DefaultRemote != "" {
+		remote, ok := Config.Remotes[Config.Settings.DefaultRemote]
+		if !ok {
+			return errors.New("Remote not found")
+		}
+		Source = new(sync.SyncSource)
+		*Source, err = sync.NewSource(remote, SessionRepository)
+		if err != nil {
+			return err
+		}
+	} else {
+		Source = nil
+	}
 
 	err = rootCmd.Execute()
 	if err != nil {
