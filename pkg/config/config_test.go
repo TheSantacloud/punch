@@ -66,8 +66,6 @@ func TestConfig_InitConfig_AllowedRemoteUsed(t *testing.T) {
         note = "G"
         `, remoteName, remoteName)
 
-	fmt.Println(spreadsheetRemote)
-
 	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
 	assert.NoError(t, err)
 
@@ -128,8 +126,6 @@ func TestConfig_InitConfig_AutoSyncValidatedWhenDefaultIsSet(t *testing.T) {
         note = "G"
         `, remoteName, remoteName, remoteName)
 
-	fmt.Println(spreadsheetRemote)
-
 	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
 	assert.NoError(t, err)
 
@@ -163,8 +159,6 @@ func TestConfig_InitConfig_AutoSyncNotValidatedWhenDefaultIsNotSet(t *testing.T)
         note = "G"
         `, remoteName, remoteName)
 
-	fmt.Println(spreadsheetRemote)
-
 	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
 	assert.NoError(t, err)
 
@@ -183,8 +177,6 @@ func TestConfig_InitConfig_AutoSyncNotValidatedWhenDefaultNotExists(t *testing.T
         [settings]
         default_remote = "not-exists"
         `
-
-	fmt.Println(spreadsheetRemote)
 
 	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
 	assert.NoError(t, err)

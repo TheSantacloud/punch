@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -28,7 +27,6 @@ func TestConflictManager_GetConflicts(t *testing.T) {
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
-	fmt.Println(buf.String())
 	assert.NoError(t, err)
 	assert.NotNil(t, buf)
 }
