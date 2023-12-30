@@ -135,8 +135,6 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 	maxIdx := max(clientColumnIndex, dateColumnIndex, startTimeColumnIndex,
 		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
-	fmt.Println("BBBBBBBBBBBBBBBBB")
-	fmt.Println(maxIdx)
 	row := make([]interface{}, maxIdx)
 	for i := range row {
 		switch i {
