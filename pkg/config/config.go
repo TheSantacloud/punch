@@ -18,8 +18,8 @@ type Config struct {
 type Settings struct {
 	Editor        string
 	Currency      string   `mapstructure:"default_currency"`
-	DefaultClient string   `mapstructure:"default_client"`
 	DefaultRemote string   `mapstructure:"default_remote"`
+	DefaultClient string   `mapstructure:"default_client"`
 	AutoSync      []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit delete"`
 }
 
@@ -55,8 +55,14 @@ func (s *SpreadsheetRemote) String() string {
 	return fmt.Sprintf("[%s] (%s)", s.Type(), s.ID)
 }
 
-func InitConfig() (*Config, error) {
-	if err := setupDefaultConfig(); err != nil {
+func InitConfig(configPaths ...string) (*Config, error) {
+	var configPath string
+	if len(configPaths) > 0 {
+		configPath = configPaths[0]
+	} else {
+		configPath = ""
+	}
+	if err := setupDefaultConfig(configPath); err != nil {
 		return nil, err
 	}
 
@@ -68,13 +74,9 @@ func InitConfig() (*Config, error) {
 	return conf, nil
 }
 
-func setupDefaultConfig() error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
+func setupDefaultConfig(optionalConfigPath string) error {
+	configPath := determineConfigPath(optionalConfigPath)
 
-	configPath := filepath.Join(home, ".punch")
 	if err := os.MkdirAll(configPath, os.ModePerm); err != nil {
 		return err
 	}
@@ -87,7 +89,7 @@ func setupDefaultConfig() error {
 	viper.SetDefault("database.path", filepath.Join(configPath, "punch.db"))
 
 	viper.SetDefault("settings.default_currency", "USD")
-	viper.SetDefault("settings.editor", "vim")
+	viper.SetDefault("settings.editor", "vi")
 
 	if viper.IsSet("sync.engine") {
 		viper.SetDefault("sync.sync_actions", []string{"end"})
@@ -101,6 +103,22 @@ func setupDefaultConfig() error {
 	}
 
 	return nil
+}
+
+func determineConfigPath(optionalConfigPath string) string {
+	if optionalConfigPath != "" {
+		return optionalConfigPath
+	}
+
+	if envConfigPath, ok := os.LookupEnv("PUNCH_CONFIG_PATH"); ok {
+		return envConfigPath
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".punch")
 }
 
 func loadConfig() (*Config, error) {
@@ -124,7 +142,10 @@ func loadConfig() (*Config, error) {
 	}
 
 	validate := validator.New()
-	validate.RegisterValidation("autosync_requires_default_remote", validateAutoSync)
+	validate.RegisterValidation("autosync_requires_default_remote",
+		validateAutoSync)
+	validate.RegisterValidation("default_remote must have a coresponding remote set",
+		validateDefaultRemoteExistsWithinRemotes)
 
 	err := validate.Struct(conf)
 	if err != nil {
@@ -140,6 +161,23 @@ func validateAutoSync(fl validator.FieldLevel) bool {
 	defaultRemote := settings.DefaultRemote
 
 	return len(autoSync) == 0 || (len(autoSync) > 0 && defaultRemote != "")
+}
+
+func validateDefaultRemoteExistsWithinRemotes(fl validator.FieldLevel) bool {
+	config := fl.Parent().Interface().(Config)
+	settings := config.Settings
+	defaultRemote := settings.DefaultRemote
+
+	if defaultRemote == "" {
+		return true
+	}
+
+	for _, remote := range config.Remotes {
+		if remote.String() == defaultRemote {
+			return true
+		}
+	}
+	return false
 }
 
 func unmarshalRemotes(remoteMap map[string]interface{}, conf *Config) error {
