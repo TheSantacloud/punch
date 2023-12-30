@@ -19,7 +19,7 @@ type Settings struct {
 	Editor        string
 	Currency      string   `mapstructure:"default_currency"`
 	DefaultRemote string   `mapstructure:"default_remote"`
-	DefaultClient string   `mapstructure:"default_client"`
+	DefaultClient string   `mapstructure:"default_client"` // TODO: this might be better as a databased setting
 	AutoSync      []string `mapstructure:"autosync" validate:"omitempty,dive,oneof=start end edit delete"`
 }
 
@@ -34,9 +34,10 @@ type Remote interface {
 }
 
 type SpreadsheetRemote struct {
-	ID        string   `mapstructure:"spreadsheet_id" validate:"required"`
-	SheetName string   `mapstructure:"sheet_name" validate:"required"`
-	Columns   struct { // TODO: this is duplicated in sheet.go, find a better way
+	ID                     string   `mapstructure:"spreadsheet_id" validate:"required"`
+	SheetName              string   `mapstructure:"sheet_name" validate:"required"`
+	ServiceAccountJsonPath string   `mapstructure:"service_account_json_path"`
+	Columns                struct { // TODO: this is duplicated in sheet.go, find a better way
 		ID        string `validate:"required"`
 		Client    string `validate:"required"`
 		Date      string `validate:"required"`
@@ -197,6 +198,12 @@ func unmarshalRemotes(remoteMap map[string]interface{}, conf *Config) error {
 			if err := viper.UnmarshalKey(fmt.Sprintf("remotes.%s", key), &remote); err != nil {
 				return err
 			}
+
+			// set default values
+			if remote.ServiceAccountJsonPath == "" {
+				remote.ServiceAccountJsonPath = filepath.Join(determineConfigPath(""), "service-account.json")
+			}
+
 			conf.Remotes[key] = &remote
 		default:
 			return fmt.Errorf("unknown remote type '%s'", remoteType)

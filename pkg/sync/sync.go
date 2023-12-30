@@ -32,7 +32,7 @@ func NewSource(remoteConfig config.Remote, sessionRepository repositories.Sessio
 		if !ok {
 			return nil, InvalidRemoteConfigError
 		}
-		client, err := sheets.GetSheet(*remoteSheetConfig)
+		client, err := sheets.NewSheet(*remoteSheetConfig)
 		if err != nil {
 			return nil, err
 		}

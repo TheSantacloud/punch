@@ -84,7 +84,12 @@ func replaceToGitDiffStandard(diffString *string) {
 }
 
 func keepOnlyDiffObjects(diffString *string) string {
-	objects := strings.Split(*diffString, models.YAML_SERIALIZATION_SEPARATOR)
+	// separate commented header from content
+	diffComponents := strings.Split(*diffString, "\n\n")
+	header := diffComponents[0]
+	content := strings.Join(diffComponents[1:], "\n\n")
+
+	objects := strings.Split(content, models.YAML_SERIALIZATION_SEPARATOR)
 	relevantObjects := ""
 	for _, object := range objects {
 		if strings.HasPrefix(object, "#ifndef") {
@@ -95,7 +100,8 @@ func keepOnlyDiffObjects(diffString *string) string {
 		relevantObjects = relevantObjects[:len(relevantObjects)-
 			len(models.YAML_SERIALIZATION_SEPARATOR)]
 	}
-	return relevantObjects
+
+	return header + "\n\n" + relevantObjects
 }
 
 func DetectDeletedSessions(sessions *[]models.Session, editedSessions *[]models.Session) []models.Session {

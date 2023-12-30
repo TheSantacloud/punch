@@ -3,7 +3,6 @@ package editor
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 

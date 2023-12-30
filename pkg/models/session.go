@@ -60,7 +60,7 @@ func (s Session) Summary() string {
 	earnings := "Earnings: N/A"
 	duration := "Duration: N/A"
 
-	id := "<nil>"
+	id := "TBD"
 	if s.ID != nil {
 		id = strconv.Itoa(int(*s.ID))
 	}
@@ -71,7 +71,10 @@ func (s Session) Summary() string {
 		earnings = fmt.Sprintf("%.2f %s", value, s.Client.Currency)
 	}
 
-	date := s.Start.Format("2006-01-02")
+	date := "N/A"
+	if s.Start != nil {
+		date = s.Start.Format("2006-01-02")
+	}
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", id, date, s.Client.Name, duration, earnings)
 }
 
@@ -103,15 +106,21 @@ func (s Session) SerializeYAML() (*[]byte, error) {
 	if s.ID != nil {
 		id = fmt.Sprint(*s.ID)
 	}
-	end := ""
+	startDate := "N/A"
+	startTime := "N/A"
+	if s.Start != nil {
+		startDate = s.Start.Format("2006-01-02")
+		startTime = s.Start.Format("15:04:05")
+	}
+	end := "N/A"
 	if s.End != nil {
 		end = s.End.Format("15:04:05")
 	}
 	ed := EditableSession{
 		ID:        id,
 		Client:    s.Client.Name,
-		Date:      s.Start.Format("2006-01-02"),
-		StartTime: s.Start.Format("15:04:05"),
+		Date:      startDate,
+		StartTime: startTime,
 		EndTime:   end,
 		Note:      s.Note,
 	}

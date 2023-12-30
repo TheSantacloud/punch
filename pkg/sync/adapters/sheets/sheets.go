@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -49,18 +48,48 @@ var (
 	noteColumnIndex      int
 )
 
-func GetSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
-	ctx := context.Background()
-
-	client, err := getClient(ctx)
+func NewSheet(cfg config.SpreadsheetRemote) (*Sheet, error) {
+	srv, err := CreateGoogleSheetClient(cfg.ServiceAccountJsonPath)
 	if err != nil {
 		return nil, err
 	}
+
+	sheet, err := GetSheet(srv, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return sheet, nil
+}
+
+func CreateGoogleSheetClient(serviceAccountJsonPath string) (*sheets.Service, error) {
+	ctx := context.Background()
+	client, err := getClient(ctx, serviceAccountJsonPath)
+	if err != nil {
+		return nil, err
+	}
+
 	srv, err := sheets.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, err
 	}
 
+	return srv, nil
+}
+
+func getClient(ctx context.Context, serviceAccountJsonPath string) (*http.Client, error) {
+	b, err := os.ReadFile(serviceAccountJsonPath)
+	if err != nil {
+		log.Fatalf("Unable to read service account key file: %v", err)
+	}
+	config, err := google.JWTConfigFromJSON(b, sheets.SpreadsheetsScope)
+	if err != nil {
+		log.Fatalf("Unable to parse service account key file to config: %v", err)
+	}
+	return config.Client(ctx), nil
+}
+
+func GetSheet(srv *sheets.Service, cfg config.SpreadsheetRemote) (*Sheet, error) {
 	sheet := Sheet{
 		Service:       srv,
 		SpreadsheetId: cfg.ID,
@@ -85,7 +114,7 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 
 	for i, row := range resp.Values {
 		if i == 0 {
-			s.parseHeaders(row)
+			s.ParseHeaders(row)
 			continue
 		}
 
@@ -106,11 +135,17 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 	maxIdx := max(clientColumnIndex, dateColumnIndex, startTimeColumnIndex,
 		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
+	fmt.Println("BBBBBBBBBBBBBBBBB")
+	fmt.Println(maxIdx)
 	row := make([]interface{}, maxIdx)
 	for i := range row {
 		switch i {
 		case idColumnIndex:
-			row[idColumnIndex] = session.ID
+			if session.ID == nil {
+				row[idColumnIndex] = ""
+			} else {
+				row[idColumnIndex] = strconv.FormatUint(uint64(*session.ID), 10)
+			}
 		case clientColumnIndex:
 			row[clientColumnIndex] = session.Client.Name
 		case dateColumnIndex:
@@ -213,25 +248,7 @@ func (s *Sheet) UpdateRow(record Record) error {
 	return err
 }
 
-func getClient(ctx context.Context) (*http.Client, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("Unable to find home directory: %v", err)
-	}
-	path := filepath.Join(homeDir, ".work", "service-account.json")
-	b, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Unable to read service account key file: %v", err)
-	}
-
-	config, err := google.JWTConfigFromJSON(b, sheets.SpreadsheetsScope)
-	if err != nil {
-		log.Fatalf("Unable to parse service account key file to config: %v", err)
-	}
-	return config.Client(ctx), nil
-}
-
-func (s *Sheet) parseHeaders(row []interface{}) {
+func (s *Sheet) ParseHeaders(row []interface{}) {
 	for i, column := range row {
 		switch column {
 		case s.Columns.ID:
