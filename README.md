@@ -34,16 +34,16 @@ Punch is a command line tool designed for freelancers to manage work sessions an
   Toggle start/end session:
   ```bash
   punch
-  punch -c Acme     # if there's not default_client set
+  punch -c Acme     # if there's no default_client set
   ```
 
 - **Explicit Start and End**: You can also start and end sessions explicitly. You can also add a date/time explicitly to it.
 
   ```bash
   punch start        # start session
-  punch start [date] # start session at 10:23
+  punch start [date] # start session at [date] 
   punch end          # end session
-  punch start [date] # end session at 20:23
+  punch start [date] # end session at [date]
   ```
 
 ### Get Command
