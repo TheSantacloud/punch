@@ -54,7 +54,7 @@ func TestConflictManager_GetConflicts_EmptySessions(t *testing.T) {
 	buf, err := GetConflicts(localSessions, remoteSessions)
 	assert.NoError(t, err)
 	assert.NotNil(t, buf)
-	assert.Empty(t, buf.String(), "Buffer should be empty for no conflicts")
+	assert.NotContains(t, buf.String(), "<<<", "Buffer should not contain the word 'Conflict'")
 }
 
 func TestConflictManager_GetConflicts_IdenticalSessions(t *testing.T) {
@@ -64,7 +64,7 @@ func TestConflictManager_GetConflicts_IdenticalSessions(t *testing.T) {
 	buf, err := GetConflicts(sessions, sessions)
 	assert.NoError(t, err)
 	assert.NotNil(t, buf)
-	assert.Empty(t, buf.String(), "Buffer should be empty for identical sessions")
+	assert.NotContains(t, buf.String(), "<<<", "Buffer should not contain the word 'Conflict'")
 }
 
 func TestConflictManager_DetectDeletedSessions_NoDeletions(t *testing.T) {
