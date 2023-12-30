@@ -56,13 +56,10 @@ Punch is a command line tool designed for freelancers to manage work sessions an
 
   Get details of a work session:
   ```bash
-  punch get session         # get latest session
-  punch get session [date]  # get session from specific date
-  punch get session --week  # get sessions from last week
-  punch get session --month # get sessions from last month 
-  punch get session --year  # get sessions from last month 
-  punch get session --all   # get all session
-  punch get session -c Acme # get latest session for Acme
+  punch get session -c Acme         # get latest session from Acme
+  punch get session [date] -v       # get sessions from [date] with verbose information
+  punch get session --week -v       # get verbose sessions from last week/month/year
+  punch get session --all -v -o csv # get verbose information in CSV format 
   ```
 
 ### Add Command
