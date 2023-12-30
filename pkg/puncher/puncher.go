@@ -13,6 +13,7 @@ import (
 var (
 	ErrSessionAlreadyStarted = errors.New("Session already started")
 	ErrSessionAlreadyEnded   = errors.New("Session already ended")
+	ErrInvalidSession        = errors.New("Invalid session")
 )
 
 type Puncher struct {
@@ -27,13 +28,13 @@ func NewPuncher(repo repositories.SessionRepository) *Puncher {
 
 func (p *Puncher) ToggleCheckInOut(client *models.Client, note string) (*models.Session, error) {
 	today := time.Now()
-	session, err := p.repo.GetLatestSessionOnSpecificDate(today, *client)
+	session, err := p.repo.GetLatestSession()
 	switch err {
 	case nil:
 		if session.End != nil {
 			return p.StartSession(*client, today, note)
 		} else {
-			return p.EndSession(*client, today, note)
+			return p.EndSession(*session, today, note)
 		}
 	case repositories.ErrSessionNotFound:
 		return p.StartSession(*client, today, note)
@@ -59,17 +60,13 @@ func (p *Puncher) StartSession(client models.Client, timestamp time.Time, note s
 	return &session, nil
 }
 
-func (p *Puncher) EndSession(client models.Client, timestamp time.Time, note string) (*models.Session, error) {
-	session, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, client)
-	switch err {
-	case nil:
-		if session.End != nil {
-			return session, ErrSessionAlreadyEnded
-		}
-	case repositories.ErrSessionNotFound:
+func (p *Puncher) EndSession(session models.Session, timestamp time.Time, note string) (*models.Session, error) {
+	if session.End != nil {
 		return nil, ErrSessionAlreadyEnded
-	default:
-		return nil, err
+	}
+
+	if session.Start.After(timestamp) {
+		return nil, ErrInvalidSession
 	}
 
 	session.End = &timestamp
@@ -80,10 +77,10 @@ func (p *Puncher) EndSession(client models.Client, timestamp time.Time, note str
 		session.Note = note
 	}
 
-	err = p.repo.Update(session, false)
+	err := p.repo.Update(&session, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return session, nil
+	return &session, nil
 }

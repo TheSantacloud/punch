@@ -47,7 +47,12 @@ var endCmd = &cobra.Command{
 			return err
 		}
 
-		session, _ := Puncher.EndSession(*currentClient, timestamp, punchMessage)
+		currentSession, err := SessionRepository.GetLatestSession()
+		if err != nil {
+			return err
+		}
+
+		session, _ := Puncher.EndSession(*currentSession, timestamp, punchMessage)
 		if err != nil {
 			return err
 		}

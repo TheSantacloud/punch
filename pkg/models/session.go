@@ -52,6 +52,10 @@ func (s Session) Conflicts(session Session) bool {
 			*s.Start != *session.Start)
 }
 
+func (s Session) Finished() bool {
+	return s.End != nil
+}
+
 func (s Session) Summary() string {
 	earnings := "Earnings: N/A"
 	duration := "Duration: N/A"

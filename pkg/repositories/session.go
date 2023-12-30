@@ -100,6 +100,21 @@ func (repo *GORMSessionRepository) GetSessionByID(id uint32) (*models.Session, e
 	return &domainSession, nil
 }
 
+func (repo *GORMSessionRepository) GetLatestSession() (*models.Session, error) {
+	var session RepoSession
+	err := repo.db.Preload("Client").
+		Order("start DESC").
+		First(&session).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrSessionNotFound
+		}
+		return nil, err
+	}
+	domainSession := ToDomainSession(session)
+	return &domainSession, nil
+}
+
 func (repo *GORMSessionRepository) GetLatestSessionOnSpecificDateAllClients(date time.Time) (*[]models.Session, error) {
 	var repoSessions []RepoSession
 	startOfDay := date.Truncate(24 * time.Hour)

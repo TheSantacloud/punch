@@ -14,6 +14,7 @@ type SessionRepository interface {
 	GetAllSessions(client models.Client) (*[]models.Session, error)
 	GetAllSessionsBetweenDates(start time.Time, end time.Time) (*[]models.Session, error)
 	GetAllSessionsAllClients() (*[]models.Session, error)
+	GetLatestSession() (*models.Session, error)
 	GetLatestSessionOnSpecificDate(date time.Time, client models.Client) (*models.Session, error)
 	GetLatestSessionOnSpecificDateAllClients(date time.Time) (*[]models.Session, error)
 }
