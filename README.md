@@ -203,4 +203,5 @@ Remotes are dedicated for syncing purposes and backups. They are completely opti
     - Note
 7. (Optional) format the columns with the relevant formats (date, duration, currency, etc)
 8. Configure your remote spreadsheet and map the column names to the relevant IDs ([See example](#spreadsheetremote) )
+9. Share the google sheet you've created with the service account email within JSON generated
 
