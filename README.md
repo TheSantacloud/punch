@@ -4,6 +4,8 @@ A simple CLI punchcard program.
 
 It's a highly configurable, local-first, with remote syncing support. Designed with a UX similar to `kubectl` or `git`.
 
+I developed it for myself, and thought that this might benefit other people so I made it a bit more ready.
+
 ## Installation
 
 To install Punch, clone the repository and run `make` in the project directory:
