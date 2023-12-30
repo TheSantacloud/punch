@@ -1,10 +1,12 @@
 package sync
 
 import (
-	"github.com/dormunis/punch/pkg/models"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/dormunis/punch/pkg/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func timePtr(t time.Time) *time.Time {
@@ -26,6 +28,7 @@ func TestConflictManager_GetConflicts(t *testing.T) {
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
+	fmt.Println(buf.String())
 	assert.NoError(t, err)
 	assert.NotNil(t, buf)
 }

@@ -28,7 +28,6 @@ var (
 	reportTimeframe *ReportTimeframe
 	allReport       bool
 	output          string
-	filepath        string
 	descendingOrder bool
 )
 

@@ -8,37 +8,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func getParsedDateFromArgs(args []string) (time.Time, error) {
-	var parsedDate time.Time
-	var err error
-
-	if len(args) == 0 {
-		parsedDate = time.Now()
-	} else {
-		parsedDate, err = parseDate(args[0])
-		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid date format")
-		}
-	}
-
-	return parsedDate, nil
-}
-
-func parseDate(input string) (time.Time, error) {
-	var layouts = []string{"2006-01-02", "2006-01", "2006"}
-	var parsedDate time.Time
-	var err error
-
-	for _, layout := range layouts {
-		parsedDate, err = time.Parse(layout, input)
-		if err == nil {
-			return parsedDate, nil
-		}
-	}
-
-	return time.Time{}, fmt.Errorf("invalid date format")
-}
-
 func getParsedTimeFromArgs(args []string) (time.Time, error) {
 	var parsedTime time.Time
 	var err error

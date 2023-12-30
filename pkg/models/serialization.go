@@ -88,6 +88,9 @@ func DeserializeSessionsFromYAML(buf *bytes.Buffer) (*[]Session, error) {
 			return nil, err
 		}
 		session, err := ed.ToSession()
+		if err != nil {
+			return nil, err
+		}
 		sessions = append(sessions, *session)
 	}
 	return &sessions, nil
@@ -120,7 +123,10 @@ func DeserializeAndUpdateSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session
 			if *session.ID != uint32(id) {
 				continue
 			}
-			updateSession(ed, &session)
+			err = updateSession(ed, &session)
+			if err != nil {
+				return err
+			}
 			updated = true
 			break
 		}

@@ -56,7 +56,10 @@ var editClientCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ClientRepository.Update(&updateClient)
+		err = ClientRepository.Update(&updateClient)
+		if err != nil {
+			return err
+		}
 		fmt.Printf("Updated client %s\n", updateClient.Name)
 		return nil
 	},
@@ -106,7 +109,10 @@ var editSessionCmd = &cobra.Command{
 		}
 
 		if slices.Contains(Config.Settings.AutoSync, "edit") {
-			Sync()
+			err = Sync()
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	},
@@ -139,6 +145,9 @@ func getSessionSlice(args []string) (*[]models.Session, error) {
 		startOfDay := timestamp.Truncate(24 * time.Hour)
 		endOfDay := startOfDay.Add(24 * time.Hour)
 		slice, err = SessionRepository.GetAllSessionsBetweenDates(startOfDay, endOfDay)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		today := time.Now()
 		session, err := SessionRepository.GetLatestSessionOnSpecificDate(today, *currentClient)

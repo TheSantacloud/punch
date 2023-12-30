@@ -143,12 +143,19 @@ func loadConfig() (*Config, error) {
 	}
 
 	validate := validator.New()
-	validate.RegisterValidation("autosync_requires_default_remote",
+	err := validate.RegisterValidation("autosync_requires_default_remote",
 		validateAutoSync)
-	validate.RegisterValidation("default_remote must have a coresponding remote set",
-		validateDefaultRemoteExistsWithinRemotes)
+	if err != nil {
+		return nil, err
+	}
 
-	err := validate.Struct(conf)
+	err = validate.RegisterValidation("default_remote must have a coresponding remote set",
+		validateDefaultRemoteExistsWithinRemotes)
+	if err != nil {
+		return nil, err
+	}
+
+	err = validate.Struct(conf)
 	if err != nil {
 		fmt.Printf("Validation errors: %v\n", err)
 	}

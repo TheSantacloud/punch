@@ -35,14 +35,20 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 	if err != nil {
 		return nil, err
 	}
-	localFile.Write(localBuffer.Bytes())
+	_, err = localFile.Write(localBuffer.Bytes())
+	if err != nil {
+		return nil, err
+	}
 	defer os.Remove(localFile.Name())
 
 	remoteFile, err := os.CreateTemp("", "punch-remote-*.yaml")
 	if err != nil {
 		return nil, err
 	}
-	remoteFile.Write(remoteBuffer.Bytes())
+	_, err = remoteFile.Write(remoteBuffer.Bytes())
+	if err != nil {
+		return nil, err
+	}
 	defer os.Remove(remoteFile.Name())
 
 	cmd := exec.Command("diff", "-D", "HEAD", localFile.Name(), remoteFile.Name())
@@ -96,11 +102,8 @@ func keepOnlyDiffObjects(diffString *string) string {
 			relevantObjects += object + models.YAML_SERIALIZATION_SEPARATOR
 		}
 	}
-	if strings.HasSuffix(relevantObjects, models.YAML_SERIALIZATION_SEPARATOR) {
-		relevantObjects = relevantObjects[:len(relevantObjects)-
-			len(models.YAML_SERIALIZATION_SEPARATOR)]
-	}
 
+	relevantObjects = strings.TrimSuffix(relevantObjects, models.YAML_SERIALIZATION_SEPARATOR)
 	return header + "\n\n" + relevantObjects
 }
 

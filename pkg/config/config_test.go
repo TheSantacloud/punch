@@ -32,7 +32,8 @@ func TestConfig_InitConfig_FromFile(t *testing.T) {
     [settings]
     editor = "nano"
     `
-	os.WriteFile(configFile, []byte(configContent), 0644)
+	err := os.WriteFile(configFile, []byte(configContent), 0644)
+	assert.NoError(t, err)
 
 	config, err := InitConfig(tempDir)
 	assert.NoError(t, err)
@@ -67,7 +68,8 @@ func TestConfig_InitConfig_AllowedRemoteUsed(t *testing.T) {
 
 	fmt.Println(spreadsheetRemote)
 
-	os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	assert.NoError(t, err)
 
 	config, err := InitConfig(tempDir)
 	assert.NoError(t, err)
@@ -91,7 +93,8 @@ func TestConfig_InitConfig_NotSupportedRemoteReturnsError(t *testing.T) {
         type = "%s"
     `, remoteName, invalidRemoteName)
 
-	os.WriteFile(configFile, []byte(invalidRemoteConfig), 0644)
+	err := os.WriteFile(configFile, []byte(invalidRemoteConfig), 0644)
+	assert.NoError(t, err)
 
 	config, err := InitConfig(tempDir)
 
@@ -127,7 +130,8 @@ func TestConfig_InitConfig_AutoSyncValidatedWhenDefaultIsSet(t *testing.T) {
 
 	fmt.Println(spreadsheetRemote)
 
-	os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	assert.NoError(t, err)
 
 	config, err := InitConfig(tempDir)
 	assert.NoError(t, err)
@@ -161,7 +165,8 @@ func TestConfig_InitConfig_AutoSyncNotValidatedWhenDefaultIsNotSet(t *testing.T)
 
 	fmt.Println(spreadsheetRemote)
 
-	os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	assert.NoError(t, err)
 
 	config, err := InitConfig(tempDir)
 	assert.NoError(t, err)
@@ -181,7 +186,8 @@ func TestConfig_InitConfig_AutoSyncNotValidatedWhenDefaultNotExists(t *testing.T
 
 	fmt.Println(spreadsheetRemote)
 
-	os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	err := os.WriteFile(configFile, []byte(spreadsheetRemote), 0644)
+	assert.NoError(t, err)
 
 	config, err := InitConfig(tempDir)
 	assert.NoError(t, err)
