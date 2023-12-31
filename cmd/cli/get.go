@@ -157,7 +157,7 @@ func getRelevatSessions() (*[]models.Session, error) {
 		if currentClientName != "" && session.Client.Name != currentClientName {
 			continue
 		}
-		if session.Start.After(startDate) && session.End.Before(endDate) {
+		if session.Start.After(startDate) && session.End != nil && session.End.Before(endDate) {
 			slice = append(slice, session)
 		}
 	}
