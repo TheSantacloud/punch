@@ -282,7 +282,7 @@ func getEndDate(startDate time.Time) time.Time {
 		mo, err := parseMonth(monthReport)
 		if err == nil {
 			lastDay := lastDayOfMonth(year, mo)
-			return time.Date(year, mo, lastDay, 0, 0, 0, 0, startDate.Location())
+			return time.Date(year, mo, lastDay, 0, 0, 0, 0, startDate.Location()).Add(24 * time.Hour)
 		}
 	}
 
@@ -291,7 +291,11 @@ func getEndDate(startDate time.Time) time.Time {
 }
 
 func lastDayOfMonth(year int, month time.Month) int {
-	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	if month > 12 {
+		year += 1
+	}
+	month = month%12 + 1
+	return time.Date(year, month, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
 func getAmountOfTimeFilterFlags() int8 {
