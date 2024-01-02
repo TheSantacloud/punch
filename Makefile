@@ -7,7 +7,10 @@ build:
 test:
 	go test ./...
 
+lint:
+	golangci-lint run
+
 .PHONY: all
 
 .DEFAULT_GOAL := all
-all: format test build
+all: format lint test build
