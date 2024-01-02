@@ -104,6 +104,9 @@ func keepOnlyDiffObjects(diffString *string) string {
 	}
 
 	relevantObjects = strings.TrimSuffix(relevantObjects, models.YAML_SERIALIZATION_SEPARATOR)
+	if relevantObjects == "" {
+		return ""
+	}
 	return header + "\n\n" + relevantObjects
 }
 
