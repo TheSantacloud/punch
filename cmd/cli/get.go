@@ -22,6 +22,7 @@ const (
 )
 
 var (
+	dayReport       bool
 	weekReport      bool
 	monthReport     string
 	yearReport      string
@@ -77,7 +78,7 @@ punch get session 01-01`,
 		}
 		timeFlagCount := getAmountOfTimeFilterFlags()
 		if timeFlagCount > 1 {
-			return errors.New("only one of --week, --month, --year or --all can be set")
+			return errors.New("only one of --day, --week, --month, --year or --all can be set")
 		}
 
 		reportTimeframe, err = getTimeframe()
@@ -105,7 +106,9 @@ punch get session 01-01`,
 
 func getTimeframe() (*ReportTimeframe, error) {
 	reportTimeframe := REPORT_TIMEFRAME_DAY
-	if weekReport {
+	if dayReport {
+		reportTimeframe = REPORT_TIMEFRAME_DAY
+	} else if weekReport {
 		reportTimeframe = REPORT_TIMEFRAME_WEEK
 	} else if monthReport != "" {
 		if err := validateMonth(monthReport); err != nil {
@@ -269,9 +272,6 @@ func getEndDate(startDate time.Time) time.Time {
 	year, _, _ := startDate.Date()
 
 	switch *reportTimeframe {
-	case REPORT_TIMEFRAME_WEEK:
-		return startDate.AddDate(0, 0, 6)
-
 	case REPORT_TIMEFRAME_YEAR:
 		yr, err := parseYear(yearReport)
 		if err == nil {
@@ -299,7 +299,9 @@ func lastDayOfMonth(year int, month time.Month) int {
 }
 
 func getAmountOfTimeFilterFlags() int8 {
-	flags := []bool{weekReport,
+	flags := []bool{
+		!dayReport,
+		!weekReport,
 		monthReport != "",
 		yearReport != "",
 		allReport}
@@ -329,7 +331,8 @@ func init() {
 	getCmd.AddCommand(getClientCmd)
 	getSessionCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
 	getSessionCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
-	getSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for a specific week (format: YYYY-WW), leave empty for current week")
+	getSessionCmd.Flags().BoolVar(&dayReport, "day", false, "Get report for this current day")
+	getSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for this current week")
 	getSessionCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
 	getSessionCmd.Flags().StringVar(&yearReport, "year", "", "Get report for a specific year (format: YYYY), leave empty for current year")
 	getSessionCmd.Flags().BoolVar(&allReport, "all", false, "Get all sessions")
