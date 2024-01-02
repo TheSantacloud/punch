@@ -42,9 +42,19 @@ Punch is a command line tool designed for freelancers to manage work sessions an
   ```bash
   punch start        # start session
   punch start [date] # start session at [date] 
+  punch start -- -2m    # start session 2 minutes ago
   punch end          # end session
-  punch start [date] # end session at [date]
+  punch end [date]   # end session at [date]
+  punch end -- -10m     # end session 10 minutes ago
   ```
+
+  Supported relative times are:
+  - s - second
+  - m - minute
+  - h - hour
+  - d - day
+  - M - month
+  - y - year
 
 ### Get Command
 - **Retrieve Client or Session Details**: Use the `get` command to fetch details about clients or work sessions. 
@@ -59,6 +69,7 @@ Punch is a command line tool designed for freelancers to manage work sessions an
   punch get session -c Acme         # get latest session from Acme
   punch get session [date] -v       # get sessions from [date] with verbose information
   punch get session --week -v       # get verbose sessions from last week/month/year
+  punch get session -- -1.5w        # get all sessions from the past 1.5 weeks
   punch get session --all -v -o csv # get verbose information in CSV format 
   ```
 

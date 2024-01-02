@@ -256,7 +256,7 @@ func extractFromTimeDelta(input string) (time.Time, error) {
 		input, err = parseDurationMoreThanHour(input, 24)
 	case "w":
 		input, err = parseDurationMoreThanHour(input, 24*7)
-	case "m":
+	case "M":
 		input, err = parseDurationMoreThanHour(input, 24*30)
 	case "y":
 		input, err = parseDurationMoreThanHour(input, 24*365)
