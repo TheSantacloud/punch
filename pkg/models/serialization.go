@@ -31,11 +31,11 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	uintId := uint32(id)
 
 	client := Client{Name: ed.Client}
-	startTime, err := time.Parse("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date)
+	startTime, err := time.ParseInLocation("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date, time.Local)
 	if err != nil {
 		return nil, err
 	}
-	endTime, err := time.Parse("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date)
+	endTime, err := time.ParseInLocation("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date, time.Local)
 	if err != nil {
 		return nil, err
 	}

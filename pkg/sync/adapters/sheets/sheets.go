@@ -188,9 +188,9 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 
 	var startTime time.Time
 	startTimestamp := row[startTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
-	startTime, err := time.Parse("15:04:05 02/01/2006", startTimestamp)
+	startTime, err := time.ParseInLocation("15:04:05 02/01/2006", startTimestamp, time.Local)
 	if err != nil {
-		startTime, err = time.Parse("02/01/2006", row[dateColumnIndex].(string))
+		startTime, err = time.ParseInLocation("02/01/2006", row[dateColumnIndex].(string), time.Local)
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +199,7 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 	var endTime *time.Time
 	if len(row) > 4 && row[endTimeColumnIndex] != "" {
 		endTimestamp := row[endTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
-		parsedTime, err := time.Parse("15:04:05 02/01/2006", endTimestamp)
+		parsedTime, err := time.ParseInLocation("15:04:05 02/01/2006", endTimestamp, time.Local)
 		if err != nil {
 			return nil, err
 		}
