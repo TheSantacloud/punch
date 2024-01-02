@@ -45,7 +45,7 @@ var syncCmd = &cobra.Command{
 }
 
 func Sync() error {
-	resolvedSessions, err := pull(*Source)
+	err := pull(*Source)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,12 @@ func Sync() error {
 		return nil
 	}
 
-	err = (*Source).Push(resolvedSessions)
+	newSessions, err := SessionRepository.GetAllSessionsAllClients()
+	if err != nil {
+		return err
+	}
+
+	err = (*Source).Push(newSessions)
 	if err != nil {
 		return err
 	}
@@ -62,42 +67,42 @@ func Sync() error {
 	return nil
 }
 
-func pull(source sync.SyncSource) (*[]models.Session, error) {
+func pull(source sync.SyncSource) error {
 	pulledSessions, err := source.Pull()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	sessions, err := SessionRepository.GetAllSessionsAllClients()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	conflictsBuffer, err := sync.GetConflicts(*sessions, pulledSessions)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if conflictsBuffer != nil && conflictsBuffer.Len() > 0 {
 		err = editor.InteractiveEdit(conflictsBuffer, "yaml")
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	deserializedSessions, err := models.DeserializeSessionsFromYAML(conflictsBuffer)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, session := range *deserializedSessions {
 		err = SessionRepository.Upsert(&session, false)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return sessions, nil
+	return nil
 }
 
 func init() {

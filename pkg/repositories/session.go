@@ -258,16 +258,16 @@ func ToRepoSession(session models.Session) RepoSession {
 }
 
 func ToDomainSession(repoSession RepoSession) models.Session {
-	startTime := repoSession.Start
+	startTime := repoSession.Start.In(time.Local)
 	var endTime *time.Time
 	if repoSession.End != nil {
 		endTime = new(time.Time)
-		*endTime = *repoSession.End
+		*endTime = repoSession.End.In(time.Local)
 	}
 	return models.Session{
 		ID:     repoSession.ID,
 		Client: ToDomainClient(repoSession.Client),
-		Start:  startTime,
+		Start:  &startTime,
 		End:    endTime,
 		Note:   repoSession.Note,
 	}

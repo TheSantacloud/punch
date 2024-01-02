@@ -24,11 +24,15 @@ type EditableSession struct {
 }
 
 func (ed EditableSession) ToSession() (*Session, error) {
-	id, err := strconv.ParseUint(ed.ID, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid ID format for session: %s", ed.ID)
+	var uintId *uint32
+	if ed.ID != "" {
+		id, err := strconv.ParseUint(ed.ID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format for session: %s", ed.ID)
+		}
+		uintId = new(uint32)
+		*uintId = uint32(id)
 	}
-	uintId := uint32(id)
 
 	client := Client{Name: ed.Client}
 	startTime, err := time.ParseInLocation("15:04:05 2006-01-02", ed.StartTime+" "+ed.Date, time.Local)
@@ -45,7 +49,7 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	}
 
 	return &Session{
-		ID:     &uintId,
+		ID:     uintId,
 		Client: client,
 		Start:  &startTime,
 		End:    &endTime,
