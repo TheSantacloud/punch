@@ -16,7 +16,7 @@ var startCmd = &cobra.Command{
 		return GetClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		timestamp, err := GetParsedTimeFromArgs(args)
+		timestamp, err := ExtractParsedTimeFromArgs(args)
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ var endCmd = &cobra.Command{
 		return GetClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		timestamp, err := GetParsedTimeFromArgs(args)
+		timestamp, err := ExtractParsedTimeFromArgs(args)
 		if err != nil {
 			return err
 		}

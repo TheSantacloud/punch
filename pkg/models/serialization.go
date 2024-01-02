@@ -49,6 +49,10 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	}
 
 	if endTime != nil && (startTime.After(*endTime) || startTime.Equal(*endTime)) {
+		// FIXME: theres a bug here for when you finish a session on the next day
+		// but i can't safely assume that if start > end then the date of end is the
+		// next day... need to think about it. i probably need to use full dates in the
+		// yaml file and drop the date field
 		return nil, fmt.Errorf("start time must be before end time")
 	}
 

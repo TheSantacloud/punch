@@ -65,16 +65,25 @@ var editSessionCmd = &cobra.Command{
 	Use:     "session [id]",
 	Aliases: []string{"sessions"},
 	Short:   "edit a specific session (defaults to latest today)",
+	Args:    cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		reportTimeframe, err = GetTimeframe()
+		reportTimeframe, err = ExtractTimeframeFromFlags()
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sessions, err := GetRelevatSessions(*reportTimeframe)
+		var sessions *[]models.Session
+		var err error
+
+		if len(args) == 1 {
+			sessions, err = GetRelativeSessionsFromArgs(args)
+		} else {
+			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
+		}
+
 		if err != nil {
 			return err
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dormunis/punch/pkg/models"
@@ -29,11 +30,11 @@ var (
 	allReport       bool
 )
 
-func GetRelevatSessions(timeframe ReportTimeframe) (*[]models.Session, error) {
+func GetSessionsWithTimeframe(timeframe ReportTimeframe) (*[]models.Session, error) {
 	var slice []models.Session
 
 	startDate := getStartDate(timeframe)
-	endDate := getEndDate(startDate)
+	endDate := getEndDate(timeframe, startDate)
 	sessions, err := SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -49,6 +50,14 @@ func GetRelevatSessions(timeframe ReportTimeframe) (*[]models.Session, error) {
 		}
 	}
 	return &slice, nil
+}
+
+func GetRelativeSessionsFromArgs(args []string) (*[]models.Session, error) {
+	startDate, err := ExtractParsedTimeFromArgs(args)
+	if err != nil {
+		return nil, err
+	}
+	return SessionRepository.GetAllSessionsBetweenDates(startDate, time.Now())
 }
 
 func SortSessions(slice *[]models.Session, descending bool) {
@@ -92,10 +101,10 @@ func getStartDate(timeframe ReportTimeframe) time.Time {
 	return today.AddDate(0, 0, -today.Day()+1)
 }
 
-func getEndDate(startDate time.Time) time.Time {
+func getEndDate(timeframe ReportTimeframe, startDate time.Time) time.Time {
 	year, _, _ := startDate.Date()
 
-	switch *reportTimeframe {
+	switch timeframe {
 	case REPORT_TIMEFRAME_YEAR:
 		yr, err := parseYear(yearReport)
 		if err == nil {
@@ -137,7 +146,7 @@ func lastDayOfMonth(year int, month time.Month) int {
 	return time.Date(year, month, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
-func GetTimeframe() (*ReportTimeframe, error) {
+func ExtractTimeframeFromFlags() (*ReportTimeframe, error) {
 	timeFlagCount := getAmountOfTimeFilterFlags()
 	if timeFlagCount > 1 {
 		return nil, errors.New("only one of --day, --week, --month, --year or --all can be set")
@@ -202,14 +211,14 @@ func validateYear(year string) error {
 	return nil
 }
 
-func GetParsedTimeFromArgs(args []string) (time.Time, error) {
+func ExtractParsedTimeFromArgs(args []string) (time.Time, error) {
 	var parsedTime time.Time
 	var err error
 
 	if len(args) == 0 {
 		parsedTime = time.Now()
 	} else {
-		parsedTime, err = parseTime(args[0])
+		parsedTime, err = extractTime(args[0])
 		if err != nil {
 			return time.Time{}, fmt.Errorf("invalid time format")
 		}
@@ -218,10 +227,14 @@ func GetParsedTimeFromArgs(args []string) (time.Time, error) {
 	return parsedTime, nil
 }
 
-func parseTime(input string) (time.Time, error) {
+func extractTime(input string) (time.Time, error) {
 	var layouts = []string{"15:04:05", "15:04", "15"}
 	var parsedTime time.Time
 	var err error
+
+	if strings.HasPrefix(input, "-") {
+		return extractFromTimeDelta(input)
+	}
 
 	for _, layout := range layouts {
 		parsedTime, err = time.Parse(layout, input)
@@ -231,6 +244,44 @@ func parseTime(input string) (time.Time, error) {
 	}
 
 	return time.Time{}, fmt.Errorf("invalid time format")
+}
+
+func extractFromTimeDelta(input string) (time.Time, error) {
+	var parsedTime time.Time
+	var err error
+
+	suffix := input[len(input)-1:]
+	switch suffix {
+	case "d":
+		input, err = parseDurationMoreThanHour(input, 24)
+	case "w":
+		input, err = parseDurationMoreThanHour(input, 24*7)
+	case "m":
+		input, err = parseDurationMoreThanHour(input, 24*30)
+	case "y":
+		input, err = parseDurationMoreThanHour(input, 24*365)
+	}
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time format")
+	}
+
+	delta, err := time.ParseDuration(input)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time format")
+	}
+
+	parsedTime = time.Now().Add(delta)
+	return parsedTime, nil
+}
+
+func parseDurationMoreThanHour(input string, multiplier int) (string, error) {
+	input = input[1 : len(input)-1]
+	number, err := strconv.ParseFloat(input, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid time format")
+	}
+	delta := time.Duration(number*float64(multiplier)) * time.Hour
+	return fmt.Sprintf("-%s", delta.String()), nil
 }
 
 func GetClientIfExists(name string) error {

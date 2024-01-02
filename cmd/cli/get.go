@@ -54,27 +54,37 @@ var getSessionCmd = &cobra.Command{
 	Example: `punch get session 
 punch get session 2020-01-01
 punch get session 01-01`,
+	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"sessions"},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		err := preRunCheckOutput()
 		if err != nil {
 			return err
 		}
-		reportTimeframe, err = GetTimeframe()
+
+		reportTimeframe, err = ExtractTimeframeFromFlags()
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		slice, err := GetRelevatSessions(*reportTimeframe)
+		var sessions *[]models.Session
+		var err error
+
+		if len(args) == 1 {
+			sessions, err = GetRelativeSessionsFromArgs(args)
+		} else {
+			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
+		}
+
 		if err != nil {
 			return err
 		}
 
-		SortSessions(slice, descendingOrder)
+		SortSessions(sessions, descendingOrder)
 
-		content, err := generateView(slice)
+		content, err := generateView(sessions)
 		if err != nil {
 			return err
 		}
