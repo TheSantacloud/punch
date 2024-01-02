@@ -39,12 +39,16 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	endTime, err := time.ParseInLocation("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date, time.Local)
+	var endTime *time.Time
+	if ed.EndTime != "N/A" {
+		endTime = new(time.Time)
+		*endTime, err = time.ParseInLocation("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date, time.Local)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	if startTime.After(endTime) || startTime.Equal(endTime) {
+	if endTime != nil && (startTime.After(*endTime) || startTime.Equal(*endTime)) {
 		return nil, fmt.Errorf("start time must be before end time")
 	}
 
@@ -52,7 +56,7 @@ func (ed EditableSession) ToSession() (*Session, error) {
 		ID:     uintId,
 		Client: client,
 		Start:  &startTime,
-		End:    &endTime,
+		End:    endTime,
 		Note:   ed.Note,
 	}, nil
 }
@@ -183,15 +187,24 @@ func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 
 	buf.WriteString("client,date,start_time,end_time,hours,earnings,currency,note\n")
 	for _, session := range session {
-		earnings, _ := session.Earnings()
+		earnings, err := session.Earnings()
+		earningsString := "N/A"
+		if err == nil {
+			earningsString = fmt.Sprintf("%.2f", earnings)
+		}
 
-		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%.2f,%s,%s\n",
+		end := "N/A"
+		if session.End != nil {
+			end = session.End.Format("15:04:05")
+		}
+
+		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s\n",
 			session.Client.Name,
 			session.Start.Format("2006-01-02"),
 			session.Start.Format("15:04:05"),
-			session.End.Format("15:04:05"),
+			end,
 			session.Duration(),
-			earnings,
+			earningsString,
 			session.Client.Currency,
 			session.Note,
 		))

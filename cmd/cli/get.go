@@ -101,6 +101,10 @@ func generateView(slice *[]models.Session) (*string, error) {
 	case "text":
 		lastSessionDate := (*slice)[0].Start
 		for _, session := range *slice {
+			if verbose {
+				content += session.Summary()
+				content += "\n"
+			}
 			if session.End == nil {
 				continue
 			}
@@ -115,10 +119,6 @@ func generateView(slice *[]models.Session) (*string, error) {
 				lastSessionDate = session.Start
 			}
 
-			if verbose {
-				content += session.Summary()
-				content += "\n"
-			}
 		}
 
 		content += fmt.Sprintf("%s\t%s\t%s\t%.2f %s\n",

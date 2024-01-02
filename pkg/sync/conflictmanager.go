@@ -97,9 +97,15 @@ func keepOnlyDiffObjects(diffString *string) string {
 
 	objects := strings.Split(content, models.YAML_SERIALIZATION_SEPARATOR)
 	relevantObjects := ""
+	openDiff := false
 	for _, object := range objects {
-		if strings.Contains(object, "#ifndef") {
+		if strings.Contains(object, "#ifndef") ||
+			strings.Contains(object, "#ifdef") || openDiff {
+			openDiff = true
 			relevantObjects += object + models.YAML_SERIALIZATION_SEPARATOR
+		} else if strings.Contains(object, "#else") ||
+			strings.Contains(object, "#endif") {
+			openDiff = false
 		}
 	}
 
