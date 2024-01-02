@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getClientIfExists(currentClientName)
+		return GetClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		session, err := Puncher.ToggleCheckInOut(currentClient, punchMessage)

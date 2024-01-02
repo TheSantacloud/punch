@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"time"
 
@@ -12,22 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ReportTimeframe string
-
-const (
-	REPORT_TIMEFRAME_DAY   ReportTimeframe = "day"
-	REPORT_TIMEFRAME_WEEK  ReportTimeframe = "week"
-	REPORT_TIMEFRAME_MONTH ReportTimeframe = "month"
-	REPORT_TIMEFRAME_YEAR  ReportTimeframe = "year"
-)
-
 var (
-	dayReport       bool
-	weekReport      bool
-	monthReport     string
-	yearReport      string
-	reportTimeframe *ReportTimeframe
-	allReport       bool
 	output          string
 	descendingOrder bool
 )
@@ -76,24 +60,19 @@ punch get session 01-01`,
 		if err != nil {
 			return err
 		}
-		timeFlagCount := getAmountOfTimeFilterFlags()
-		if timeFlagCount > 1 {
-			return errors.New("only one of --day, --week, --month, --year or --all can be set")
-		}
-
-		reportTimeframe, err = getTimeframe()
+		reportTimeframe, err = GetTimeframe()
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		slice, err := getRelevatSessions()
+		slice, err := GetRelevatSessions(*reportTimeframe)
 		if err != nil {
 			return err
 		}
 
-		sortSessions(slice, descendingOrder)
+		SortSessions(slice, descendingOrder)
 
 		content, err := generateView(slice)
 		if err != nil {
@@ -102,81 +81,6 @@ punch get session 01-01`,
 		fmt.Print(*content)
 		return nil
 	},
-}
-
-func getTimeframe() (*ReportTimeframe, error) {
-	reportTimeframe := REPORT_TIMEFRAME_DAY
-	if dayReport {
-		reportTimeframe = REPORT_TIMEFRAME_DAY
-	} else if weekReport {
-		reportTimeframe = REPORT_TIMEFRAME_WEEK
-	} else if monthReport != "" {
-		if err := validateMonth(monthReport); err != nil {
-			return nil, err
-		}
-		reportTimeframe = REPORT_TIMEFRAME_MONTH
-	} else if yearReport != "" {
-		if err := validateYear(yearReport); err != nil {
-			return nil, err
-		}
-		reportTimeframe = REPORT_TIMEFRAME_YEAR
-	}
-	return &reportTimeframe, nil
-}
-
-func validateMonth(month string) error {
-	monthInt, err := strconv.Atoi(month)
-	if err != nil {
-		return errors.New("invalid month format")
-	}
-	if monthInt < 1 || monthInt > 12 {
-		return errors.New("invalid month format")
-	}
-	return nil
-}
-
-func validateYear(year string) error {
-	yearInt, err := strconv.Atoi(year)
-	if err != nil {
-		return errors.New("invalid year format")
-	}
-	currentYear := time.Now().Year()
-	if yearInt < 1970 || yearInt > currentYear {
-		return errors.New("invalid year format")
-	}
-	return nil
-}
-
-func getRelevatSessions() (*[]models.Session, error) {
-	var slice []models.Session
-
-	startDate := getStartDate()
-	endDate := getEndDate(startDate)
-	sessions, err := SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
-	if err != nil {
-		return nil, err
-	}
-	for _, session := range *sessions {
-		if currentClientName != "" && session.Client.Name != currentClientName {
-			continue
-		}
-		if session.Start.After(startDate) && session.End != nil && session.End.Before(endDate) {
-			slice = append(slice, session)
-		}
-	}
-	return &slice, nil
-}
-
-func sortSessions(slice *[]models.Session, descending bool) {
-	sort.SliceStable(*slice, func(i, j int) bool {
-		prevSession := (*slice)[i]
-		nextSession := (*slice)[j]
-		if descending {
-			return prevSession.Start.After(*nextSession.Start)
-		} else {
-			return prevSession.Start.Before(*nextSession.Start)
-		}
-	})
 }
 
 func generateView(slice *[]models.Session) (*string, error) {
@@ -236,83 +140,6 @@ func generateView(slice *[]models.Session) (*string, error) {
 		content = buffer.String()
 	}
 	return &content, nil
-}
-
-func getStartDate() time.Time {
-	today := time.Now()
-	year, _, _ := today.Date()
-
-	if allReport {
-		return time.Time{}
-	}
-
-	switch *reportTimeframe {
-	case REPORT_TIMEFRAME_DAY:
-		return time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	case REPORT_TIMEFRAME_WEEK:
-		daysToSubtract := int(today.Weekday())
-		return time.Date(today.Year(), today.Month(), today.Day()-daysToSubtract, 0, 0, 0, 0, today.Location())
-	case REPORT_TIMEFRAME_MONTH:
-		mo, err := parseMonth(monthReport)
-		if err == nil {
-			return time.Date(year, mo, 1, 0, 0, 0, 0, today.Location())
-		}
-	case REPORT_TIMEFRAME_YEAR:
-		yr, err := parseYear(yearReport)
-		if err == nil {
-			return time.Date(yr, time.January, 1, 0, 0, 0, 0, today.Location())
-		}
-	}
-
-	// default to current day
-	return today.AddDate(0, 0, -today.Day()+1)
-}
-
-func getEndDate(startDate time.Time) time.Time {
-	year, _, _ := startDate.Date()
-
-	switch *reportTimeframe {
-	case REPORT_TIMEFRAME_YEAR:
-		yr, err := parseYear(yearReport)
-		if err == nil {
-			return time.Date(yr, time.December, 31, 0, 0, 0, 0, startDate.Location())
-		}
-
-	case REPORT_TIMEFRAME_MONTH:
-		mo, err := parseMonth(monthReport)
-		if err == nil {
-			lastDay := lastDayOfMonth(year, mo)
-			return time.Date(year, mo, lastDay, 0, 0, 0, 0, startDate.Location()).Add(24 * time.Hour)
-		}
-	}
-
-	// default to now
-	return time.Now()
-}
-
-func lastDayOfMonth(year int, month time.Month) int {
-	if month > 12 {
-		year += 1
-	}
-	month = month%12 + 1
-	return time.Date(year, month, 0, 0, 0, 0, 0, time.UTC).Day()
-}
-
-func getAmountOfTimeFilterFlags() int8 {
-	flags := []bool{
-		!dayReport,
-		!weekReport,
-		monthReport != "",
-		yearReport != "",
-		allReport}
-	setFlags := 0
-	for _, flag := range flags {
-		if flag {
-			setFlags++
-		}
-	}
-
-	return int8(setFlags)
 }
 
 func preRunCheckOutput() error {

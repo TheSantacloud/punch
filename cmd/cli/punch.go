@@ -13,10 +13,10 @@ var startCmd = &cobra.Command{
 	Short: "Starts a new work session",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getClientIfExists(currentClientName)
+		return GetClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		timestamp, err := getParsedTimeFromArgs(args)
+		timestamp, err := GetParsedTimeFromArgs(args)
 		if err != nil {
 			return err
 		}
@@ -45,10 +45,10 @@ var endCmd = &cobra.Command{
 	Short: "End a work session",
 	Args:  cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return getClientIfExists(currentClientName)
+		return GetClientIfExists(currentClientName)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		timestamp, err := getParsedTimeFromArgs(args)
+		timestamp, err := GetParsedTimeFromArgs(args)
 		if err != nil {
 			return err
 		}

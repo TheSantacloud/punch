@@ -1,10 +1,8 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,8 +14,6 @@ import (
 )
 
 var (
-	allClients    bool
-	dateString    string
 	approveDelete bool
 )
 
@@ -25,7 +21,7 @@ var editCmd = &cobra.Command{
 	Use:   "edit [time]",
 	Short: "interactively edit work sessions",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		err := getClientIfExists(currentClientName)
+		err := GetClientIfExists(currentClientName)
 		if err != nil {
 			return err
 		}
@@ -69,17 +65,21 @@ var editSessionCmd = &cobra.Command{
 	Use:     "session [id]",
 	Aliases: []string{"sessions"},
 	Short:   "edit a specific session (defaults to latest today)",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if (allClients && len(args) > 0) ||
-			(allClients && dateString != "") ||
-			(len(args) > 0 && dateString != "") {
-			return fmt.Errorf("Cannot specify both --all and --date or session id")
-		}
-
-		sessions, err := getSessionSlice(args)
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+		reportTimeframe, err = GetTimeframe()
 		if err != nil {
 			return err
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		sessions, err := GetRelevatSessions(*reportTimeframe)
+		if err != nil {
+			return err
+		}
+
+		SortSessions(sessions, descendingOrder)
 
 		editedSessions, err := editSessionSlice(sessions)
 		if err != nil {
@@ -118,56 +118,6 @@ var editSessionCmd = &cobra.Command{
 	},
 }
 
-func getSessionSlice(args []string) (*[]models.Session, error) {
-	var slice *[]models.Session
-	var err error
-
-	if allClients {
-		slice, err = SessionRepository.GetAllSessionsAllClients()
-		if err != nil {
-			return nil, err
-		}
-	} else if len(args) > 0 {
-		sessionId, err := strconv.ParseUint(args[0], 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		session, err := SessionRepository.GetSessionByID(uint32(sessionId))
-		if err != nil {
-			return nil, err
-		}
-		slice = &[]models.Session{*session}
-	} else if dateString != "" {
-		timestamp, err := getParsedTimeFromArgs([]string{dateString})
-		if err != nil {
-			return nil, err
-		}
-		startOfDay := timestamp.Truncate(24 * time.Hour)
-		endOfDay := startOfDay.Add(24 * time.Hour)
-		slice, err = SessionRepository.GetAllSessionsBetweenDates(startOfDay, endOfDay)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		today := time.Now()
-		session, err := SessionRepository.GetLatestSessionOnSpecificDate(today, *currentClient)
-		if err != nil {
-			return nil, err
-		}
-		slice = &[]models.Session{*session}
-	}
-
-	if slice != nil && len(*slice) == 0 {
-		return nil, errors.New("no sessions found")
-	}
-
-	sort.SliceStable(*slice, func(i, j int) bool {
-		return (*slice)[i].Start.Before(*(*slice)[j].Start)
-	})
-
-	return slice, nil
-}
-
 func editSessionSlice(sessions *[]models.Session) ([]models.Session, error) {
 	buf, err := models.SerializeSessionsToYAML(*sessions)
 	if err != nil {
@@ -202,11 +152,17 @@ func verifyDeletion(deleted []models.Session) bool {
 }
 
 func init() {
+	currentYear, currentMonth, _ := time.Now().Date()
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editSessionCmd)
 	editCmd.AddCommand(editClientCmd)
 	editSessionCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
-	editSessionCmd.Flags().StringVarP(&dateString, "date", "d", "", "Specify a specific date to edit sessions for")
-	editSessionCmd.Flags().BoolVarP(&allClients, "all", "a", false, "Edit all clients")
+	editSessionCmd.Flags().BoolVar(&dayReport, "day", false, "Edit report for this current day")
+	editSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Edit report for this current week")
+	editSessionCmd.Flags().StringVar(&monthReport, "month", "", "Edit report for a specific month (format: YYYY-MM), leave empty for current month")
+	editSessionCmd.Flags().StringVar(&yearReport, "year", "", "Edit report for a specific year (format: YYYY), leave empty for current year")
+	editSessionCmd.Flags().BoolVarP(&allReport, "all", "a", false, "Edit all clients")
 	editSessionCmd.Flags().BoolVarP(&approveDelete, "yes", "y", false, "Approve deletion of sessions automatically")
+	editSessionCmd.Flags().Lookup("month").NoOptDefVal = strconv.Itoa(int(currentMonth))
+	editSessionCmd.Flags().Lookup("year").NoOptDefVal = strconv.Itoa(currentYear)
 }
