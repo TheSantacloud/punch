@@ -94,6 +94,21 @@ func (mr *MockSessionRepositoryMockRecorder) GetAllSessionsBetweenDates(start, e
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSessionsBetweenDates", reflect.TypeOf((*MockSessionRepository)(nil).GetAllSessionsBetweenDates), start, end)
 }
 
+// GetLastSessions mocks base method.
+func (m *MockSessionRepository) GetLastSessions(arg0 uint32, arg1 *models.Client) (*[]models.Session, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastSessions", arg0, arg1)
+	ret0, _ := ret[0].(*[]models.Session)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastSessions indicates an expected call of GetLastSessions.
+func (mr *MockSessionRepositoryMockRecorder) GetLastSessions(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastSessions", reflect.TypeOf((*MockSessionRepository)(nil).GetLastSessions), arg0, arg1)
+}
+
 // GetLatestSession mocks base method.
 func (m *MockSessionRepository) GetLatestSession() (*models.Session, error) {
 	m.ctrl.T.Helper()

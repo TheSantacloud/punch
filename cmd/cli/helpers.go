@@ -22,6 +22,7 @@ const (
 )
 
 var (
+	clientName      string
 	dayReport       bool
 	weekReport      bool
 	monthReport     string
@@ -52,8 +53,8 @@ func GetSessionsWithTimeframe(timeframe ReportTimeframe) (*[]models.Session, err
 	return &slice, nil
 }
 
-func GetRelativeSessionsFromArgs(args []string) (*[]models.Session, error) {
-	startDate, err := ExtractParsedTimeFromArgs(args)
+func GetRelativeSessionsFromArgs(args []string, clientName string) (*[]models.Session, error) {
+	startDate, err := ExtractParsedTimeFromArgs(args, clientName)
 	if err != nil {
 		return nil, err
 	}
@@ -224,14 +225,21 @@ func validateYear(year string) error {
 	return nil
 }
 
-func ExtractParsedTimeFromArgs(args []string) (time.Time, error) {
+func ExtractParsedTimeFromArgs(args []string, clientName string) (time.Time, error) {
 	var parsedTime time.Time
 	var err error
+	var client *models.Client
 
 	if len(args) == 0 {
 		parsedTime = time.Now()
 	} else {
-		parsedTime, err = extractTime(args[0])
+		if clientName == "" {
+			client, err = ClientRepository.SafeGetByName(clientName)
+			if err != nil {
+				return time.Time{}, err
+			}
+		}
+		parsedTime, err = extractTime(args[0], client)
 		if err != nil {
 			return time.Time{}, fmt.Errorf("invalid time format")
 		}
@@ -240,13 +248,15 @@ func ExtractParsedTimeFromArgs(args []string) (time.Time, error) {
 	return parsedTime, nil
 }
 
-func extractTime(input string) (time.Time, error) {
+func extractTime(input string, client *models.Client) (time.Time, error) {
 	var layouts = []string{"15:04:05", "15:04", "15"}
 	var parsedTime time.Time
 	var err error
 
 	if strings.HasPrefix(input, "-") {
 		return extractFromTimeDelta(input)
+	} else if strings.Contains(input, "HEAD~") {
+		return extractFromCountDelta(input, client)
 	}
 
 	for _, layout := range layouts {
@@ -285,6 +295,20 @@ func extractFromTimeDelta(input string) (time.Time, error) {
 
 	parsedTime = time.Now().Add(delta)
 	return parsedTime, nil
+}
+
+func extractFromCountDelta(input string, client *models.Client) (time.Time, error) {
+	count, err := strconv.Atoi(input[len("HEAD~"):])
+	if err != nil || count < 1 {
+		return time.Time{}, fmt.Errorf("invalid count format, must be ~<positive integer>")
+	}
+
+	sessions, err := SessionRepository.GetLastSessions(uint32(count), client)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return *(*sessions)[len(*sessions)-1].Start, nil
 }
 
 func parseDurationMoreThanHour(input string, multiplier int) (string, error) {

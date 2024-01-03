@@ -17,6 +17,7 @@ type SessionRepository interface {
 	GetLatestSession() (*models.Session, error)
 	GetLatestSessionOnSpecificDate(date time.Time, client models.Client) (*models.Session, error)
 	GetLatestSessionOnSpecificDateAllClients(date time.Time) (*[]models.Session, error)
+	GetLastSessions(uint32, *models.Client) (*[]models.Session, error)
 }
 
 type ClientRepository interface {

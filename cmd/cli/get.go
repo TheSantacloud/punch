@@ -17,7 +17,6 @@ var (
 	descendingOrder bool
 	summary         bool
 	hideHeaders     bool
-	clientName      string
 )
 
 var getCmd = &cobra.Command{
@@ -77,7 +76,7 @@ punch get session 01-01`,
 		var err error
 
 		if len(args) == 1 {
-			sessions, err = GetRelativeSessionsFromArgs(args)
+			sessions, err = GetRelativeSessionsFromArgs(args, clientName)
 		} else {
 			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
 		}

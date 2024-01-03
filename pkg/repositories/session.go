@@ -217,6 +217,35 @@ func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(start time.Time, e
 	return &sessions, nil
 }
 
+func (repo *GORMSessionRepository) GetLastSessions(count uint32, client *models.Client) (*[]models.Session, error) {
+	var repoSessions []RepoSession
+	var err error
+	if client == nil {
+		err = repo.db.Preload("Client").
+			Order("start DESC").
+			Limit(int(count)).
+			Find(&repoSessions).Error
+	} else {
+		err = repo.db.Preload("Client").
+			Where("client_name = ?", client.Name).
+			Order("start DESC").
+			Limit(int(count)).
+			Find(&repoSessions).Error
+	}
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrSessionNotFound
+		}
+		return nil, err
+	}
+	var sessions []models.Session
+	for _, repoSession := range repoSessions {
+		sessions = append(sessions, ToDomainSession(repoSession))
+	}
+	return &sessions, nil
+}
+
 func (repo *GORMSessionRepository) GetAllSessionsAllClients() (*[]models.Session, error) {
 	var repoSessions []RepoSession
 	err := repo.db.Preload("Client").

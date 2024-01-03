@@ -79,7 +79,7 @@ var editSessionCmd = &cobra.Command{
 		var err error
 
 		if len(args) == 1 {
-			sessions, err = GetRelativeSessionsFromArgs(args)
+			sessions, err = GetRelativeSessionsFromArgs(args, clientName)
 		} else {
 			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
 		}
@@ -165,7 +165,7 @@ func init() {
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editSessionCmd)
 	editCmd.AddCommand(editClientCmd)
-	editSessionCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
+	editSessionCmd.Flags().StringVarP(&clientName, "client", "c", "", "Specify the client name")
 	editSessionCmd.Flags().BoolVar(&dayReport, "day", false, "Edit report for this current day")
 	editSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Edit report for this current week")
 	editSessionCmd.Flags().StringVar(&monthReport, "month", "", "Edit report for a specific month (format: YYYY-MM), leave empty for current month")
