@@ -17,6 +17,7 @@ var (
 	descendingOrder bool
 	summary         bool
 	hideHeaders     bool
+	clientName      string
 )
 
 var getCmd = &cobra.Command{
@@ -80,14 +81,13 @@ punch get session 01-01`,
 		} else {
 			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
 		}
-
 		if err != nil {
 			return err
 		}
 
-		SortSessions(sessions, descendingOrder)
-
-		content, err := generateView(sessions)
+		filteredSessions := FilterSessionsByClient(sessions, clientName)
+		SortSessions(filteredSessions, descendingOrder)
+		content, err := generateView(filteredSessions)
 		if err != nil {
 			return err
 		}
@@ -273,7 +273,7 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.AddCommand(getSessionCmd)
 	getCmd.AddCommand(getClientCmd)
-	getSessionCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify the client name")
+	getSessionCmd.Flags().StringVarP(&clientName, "client", "c", "", "Specify the client name")
 	getSessionCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	getSessionCmd.Flags().BoolVarP(&summary, "summary", "s", false, "Output summary of sessions")
 	getSessionCmd.Flags().BoolVar(&hideHeaders, "hide-headers", false, "Output summary of sessions")

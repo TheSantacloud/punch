@@ -60,6 +60,19 @@ func GetRelativeSessionsFromArgs(args []string) (*[]models.Session, error) {
 	return SessionRepository.GetAllSessionsBetweenDates(startDate, time.Now())
 }
 
+func FilterSessionsByClient(sessions *[]models.Session, clientName string) *[]models.Session {
+	if clientName == "" {
+		return sessions
+	}
+	var filteredSessions []models.Session
+	for _, session := range *sessions {
+		if session.Client.Name == clientName {
+			filteredSessions = append(filteredSessions, session)
+		}
+	}
+	return &filteredSessions
+}
+
 func SortSessions(slice *[]models.Session, descending bool) {
 	sort.SliceStable(*slice, func(i, j int) bool {
 		prevSession := (*slice)[i]
