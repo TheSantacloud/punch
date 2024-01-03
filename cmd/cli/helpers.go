@@ -54,11 +54,11 @@ func GetSessionsWithTimeframe(timeframe ReportTimeframe) (*[]models.Session, err
 }
 
 func GetRelativeSessionsFromArgs(args []string, clientName string) (*[]models.Session, error) {
-	startDate, err := ExtractParsedTimeFromArgs(args, clientName)
+	startDate, endDate, err := ExtractParsedTimeFromArgs(args, clientName)
 	if err != nil {
 		return nil, err
 	}
-	return SessionRepository.GetAllSessionsBetweenDates(startDate, time.Now())
+	return SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
 }
 
 func FilterSessionsByClient(sessions *[]models.Session, clientName string) *[]models.Session {
@@ -225,8 +225,9 @@ func validateYear(year string) error {
 	return nil
 }
 
-func ExtractParsedTimeFromArgs(args []string, clientName string) (time.Time, error) {
+func ExtractParsedTimeFromArgs(args []string, clientName string) (time.Time, time.Time, error) {
 	var parsedTime time.Time
+	var endTime time.Time
 	var err error
 	var client *models.Client
 
@@ -236,20 +237,19 @@ func ExtractParsedTimeFromArgs(args []string, clientName string) (time.Time, err
 		if clientName == "" {
 			client, err = ClientRepository.SafeGetByName(clientName)
 			if err != nil {
-				return time.Time{}, err
+				return time.Time{}, time.Time{}, err
 			}
 		}
-		parsedTime, err = extractTime(args[0], client)
+		parsedTime, endTime, err = extractTime(args[0], client)
 		if err != nil {
-			return time.Time{}, fmt.Errorf("invalid time format")
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid time format")
 		}
 	}
 
-	return parsedTime, nil
+	return parsedTime, endTime, nil
 }
 
-func extractTime(input string, client *models.Client) (time.Time, error) {
-	var layouts = []string{"15:04:05", "15:04", "15"}
+func extractTime(input string, client *models.Client) (time.Time, time.Time, error) {
 	var parsedTime time.Time
 	var err error
 
@@ -259,17 +259,28 @@ func extractTime(input string, client *models.Client) (time.Time, error) {
 		return extractFromCountDelta(input, client)
 	}
 
-	for _, layout := range layouts {
-		parsedTime, err = time.Parse(layout, input)
-		if err == nil {
-			return parsedTime, nil
-		}
+	parsedTime, err = time.Parse("2006", input)
+	if err == nil {
+		startOfNextYear := parsedTime.AddDate(1, 0, 0).Truncate(24 * time.Hour)
+		return parsedTime, startOfNextYear, nil
 	}
 
-	return time.Time{}, fmt.Errorf("invalid time format")
+	parsedTime, err = time.Parse("2006-01", input)
+	if err == nil {
+		startOfNextMonth := parsedTime.AddDate(0, 1, 0).Truncate(24 * time.Hour)
+		return parsedTime, startOfNextMonth, nil
+	}
+
+	parsedTime, err = time.Parse("2006-01-02", input)
+	if err == nil {
+		startOfNextDay := parsedTime.Add(24 * time.Hour).Truncate(24 * time.Hour)
+		return parsedTime, startOfNextDay, nil
+	}
+
+	return time.Time{}, time.Time{}, fmt.Errorf("invalid time format")
 }
 
-func extractFromTimeDelta(input string) (time.Time, error) {
+func extractFromTimeDelta(input string) (time.Time, time.Time, error) {
 	var parsedTime time.Time
 	var err error
 
@@ -285,30 +296,30 @@ func extractFromTimeDelta(input string) (time.Time, error) {
 		input, err = parseDurationMoreThanHour(input, 24*365)
 	}
 	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid time format")
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid time format")
 	}
 
 	delta, err := time.ParseDuration(input)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid time format")
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid time format")
 	}
 
 	parsedTime = time.Now().Add(delta)
-	return parsedTime, nil
+	return parsedTime, time.Now(), nil
 }
 
-func extractFromCountDelta(input string, client *models.Client) (time.Time, error) {
+func extractFromCountDelta(input string, client *models.Client) (time.Time, time.Time, error) {
 	count, err := strconv.Atoi(input[len("HEAD~"):])
 	if err != nil || count < 1 {
-		return time.Time{}, fmt.Errorf("invalid count format, must be ~<positive integer>")
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid count format, must be ~<positive integer>")
 	}
 
 	sessions, err := SessionRepository.GetLastSessions(uint32(count), client)
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, time.Time{}, err
 	}
 
-	return *(*sessions)[len(*sessions)-1].Start, nil
+	return *(*sessions)[len(*sessions)-1].Start, time.Now(), nil
 }
 
 func parseDurationMoreThanHour(input string, multiplier int) (string, error) {
