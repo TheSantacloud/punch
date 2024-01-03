@@ -114,20 +114,6 @@ func TestSession_Finished_False(t *testing.T) {
 	assert.False(t, session.Finished(), "Session should not be marked as finished")
 }
 
-func TestSession_Summary_WithValidData(t *testing.T) {
-	session := sampleSession()
-	summary := session.Summary()
-	assert.Contains(t, summary, session.Client.Name, "Summary should contain client name")
-	assert.Contains(t, summary, session.Start.Format("2006-01-02"), "Summary should contain start date")
-}
-
-func TestSession_Summary_WithNilStart(t *testing.T) {
-	session := sampleSession()
-	session.Start = nil
-	summary := session.Summary()
-	assert.Contains(t, summary, "N/A", "Summary should indicate unavailable data")
-}
-
 func TestSession_Earnings_WithValidSession(t *testing.T) {
 	session := sampleSession()
 	earnings, err := session.Earnings()
@@ -202,14 +188,6 @@ func TestSession_Conflicts_SameTimes(t *testing.T) {
 	session2.End = session1.End
 
 	assert.False(t, session1.Conflicts(session2), "Should return false if sessions have the same end time")
-}
-
-func TestSession_Summary_WithNilEnd(t *testing.T) {
-	session := sampleSession()
-	session.End = nil
-	summary := session.Summary()
-
-	assert.Contains(t, summary, "Duration: N/A", "Summary should indicate N/A for duration")
 }
 
 func TestSession_Earnings_WithNilStart(t *testing.T) {

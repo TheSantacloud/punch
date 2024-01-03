@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -54,28 +53,6 @@ func (s Session) Conflicts(session Session) bool {
 
 func (s Session) Finished() bool {
 	return s.End != nil
-}
-
-func (s Session) Summary() string {
-	earnings := "Earnings: N/A"
-	duration := "Duration: N/A"
-
-	id := "TBD"
-	if s.ID != nil {
-		id = strconv.Itoa(int(*s.ID))
-	}
-
-	value, err := s.Earnings()
-	if err == nil {
-		duration = s.Duration()
-		earnings = fmt.Sprintf("%.2f %s", value, s.Client.Currency)
-	}
-
-	date := "N/A"
-	if s.Start != nil {
-		date = s.Start.Format("2006-01-02")
-	}
-	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", id, date, s.Client.Name, duration, earnings)
 }
 
 func (s Session) Earnings() (float64, error) {

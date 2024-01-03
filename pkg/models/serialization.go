@@ -174,12 +174,18 @@ func updateSession(ed EditableSession, session *Session) error {
 func SerializeSessionsToCSV(sessions []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString("client,date,duration\n")
+	buf.WriteString("date,client,duration,amount,currency\n")
 	for _, session := range sessions {
-		buf.WriteString(fmt.Sprintf("%s,%s,%s\n",
+		earnings, err := session.Earnings()
+		if err != nil {
+			return nil, err
+		}
+		buf.WriteString(fmt.Sprintf("%s,%s,%s,%.2f,%s\n",
 			session.Client.Name,
 			session.Start.Format("2006-01-02"),
 			session.Duration(),
+			earnings,
+			session.Client.Currency,
 		))
 	}
 
@@ -189,7 +195,7 @@ func SerializeSessionsToCSV(sessions []Session) (*bytes.Buffer, error) {
 func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString("client,date,start_time,end_time,hours,earnings,currency,note\n")
+	buf.WriteString("date,client,start_time,end_time,duration,amount,currency,note\n")
 	for _, session := range session {
 		earnings, err := session.Earnings()
 		earningsString := "N/A"
@@ -203,8 +209,8 @@ func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 		}
 
 		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s\n",
-			session.Client.Name,
 			session.Start.Format("2006-01-02"),
+			session.Client.Name,
 			session.Start.Format("15:04:05"),
 			end,
 			session.Duration(),
