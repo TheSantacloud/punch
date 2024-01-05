@@ -222,19 +222,25 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 	w := tabwriter.NewWriter(buffer, 0, 0, 1, ' ', tabwriter.TabIndent)
 	if !hideHeaders {
 		if verbose {
-			fmt.Fprintln(w, "DATE\tCLIENT\tSTART\tEND\tDURATION\tAMOUNT\tCURRENCY\tNOTE")
+			fmt.Fprintln(w, "ID\tDATE\tCLIENT\tSTART\tEND\tDURATION\tAMOUNT\tCURRENCY\tNOTE")
 		} else {
 			fmt.Fprintln(w, "DATE\tCLIENT\tDURATION\tAMOUNT\tCURRENCY")
 		}
 	}
 	for _, session := range *slice {
+		id := "N/A"
+		if session.ID != nil {
+			id = fmt.Sprintf("%d", *session.ID)
+		}
+
 		earnings, err := session.Earnings()
 		if err != nil {
 			return "", err
 		}
 
 		if verbose {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%.2f\t%s\t%s\n",
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%.2f\t%s\t%s\n",
+				id,
 				session.Start.Format("2006-01-02"),
 				session.Client.Name,
 				session.Start.Format("15:04:05"),
