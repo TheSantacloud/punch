@@ -195,8 +195,13 @@ func SerializeSessionsToCSV(sessions []Session) (*bytes.Buffer, error) {
 func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString("date,client,start_time,end_time,duration,amount,currency,note\n")
+	buf.WriteString("id,date,client,start_time,end_time,duration,amount,currency,note\n")
 	for _, session := range session {
+		id := "N/A"
+		if session.ID != nil {
+			id = fmt.Sprintf("%d", *session.ID)
+		}
+
 		earnings, err := session.Earnings()
 		earningsString := "N/A"
 		if err == nil {
@@ -208,7 +213,8 @@ func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 			end = session.End.Format("15:04:05")
 		}
 
-		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s\n",
+		buf.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+			id,
 			session.Start.Format("2006-01-02"),
 			session.Client.Name,
 			session.Start.Format("15:04:05"),
