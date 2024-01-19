@@ -11,23 +11,59 @@ import (
 	"github.com/dormunis/punch/pkg/models"
 )
 
+type ConflictingSessions struct {
+	Local  []models.Session
+	Remote []models.Session
+}
+
 func GetConflicts(localSessions, remoteSessions []models.Session) (*bytes.Buffer, error) {
 	sort.SliceStable(localSessions, func(i, j int) bool {
 		return localSessions[i].Start.Before(*localSessions[j].Start)
 	})
-	localBuffer, err := models.SerializeSessionsToYAML(localSessions)
+	sort.SliceStable(remoteSessions, func(i, j int) bool {
+		return remoteSessions[i].Start.Before(*remoteSessions[j].Start)
+	})
+	conflicts, err := findConflictingSessions(localSessions, remoteSessions)
 	if err != nil {
 		return nil, err
 	}
 
-	sort.SliceStable(remoteSessions, func(i, j int) bool {
-		return remoteSessions[i].Start.Before(*remoteSessions[j].Start)
-	})
-	remoteBuffer, err := models.SerializeSessionsToYAML(remoteSessions)
+	localBuffer, err := models.SerializeSessionsToYAML(conflicts.Local)
+	if err != nil {
+		return nil, err
+	}
+
+	remoteBuffer, err := models.SerializeSessionsToYAML(conflicts.Remote)
 	if err != nil {
 		return nil, err
 	}
 	return generateDiffBuffer(localBuffer, remoteBuffer)
+}
+
+func findConflictingSessions(localSessions, remoteSessions []models.Session) (ConflictingSessions, error) {
+	remoteMap := make(map[uint32]models.Session)
+
+	for _, session := range remoteSessions {
+		if session.ID != nil {
+			remoteMap[*session.ID] = session
+		}
+	}
+
+	var conflicts ConflictingSessions
+
+	for _, localSession := range localSessions {
+		if localSession.ID == nil {
+			continue
+		}
+		if remoteSession, exists := remoteMap[*localSession.ID]; exists {
+			if localSession.Conflicts(remoteSession) {
+				conflicts.Local = append(conflicts.Local, localSession)
+				conflicts.Remote = append(conflicts.Remote, remoteSession)
+			}
+		}
+	}
+
+	return conflicts, nil
 }
 
 func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer, error) {

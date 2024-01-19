@@ -90,10 +90,10 @@ func TestConflictManager_DetectDeletedSessions_AllDeletions(t *testing.T) {
 
 func TestConflictManager_GetConflicts_NonOverlapping(t *testing.T) {
 	localSessions := []models.Session{
-		{Start: timePtr(time.Now().Add(-2 * time.Hour)), End: timePtr(time.Now().Add(-1 * time.Hour))},
+		{ID: uint32Ptr(1), Start: timePtr(time.Now().Add(-2 * time.Hour)), End: timePtr(time.Now().Add(-1 * time.Hour))},
 	}
 	remoteSessions := []models.Session{
-		{Start: timePtr(time.Now().Add(-4 * time.Hour)), End: timePtr(time.Now().Add(-3 * time.Hour))},
+		{ID: uint32Ptr(1), Start: timePtr(time.Now().Add(-4 * time.Hour)), End: timePtr(time.Now().Add(-3 * time.Hour))},
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
@@ -147,37 +147,6 @@ func TestConflictManager_GetConflicts_SameIDDifferentStartShowsMismatch(t *testi
 	assert.NoError(t, err)
 	assert.NotNil(t, buf)
 	assert.NotEmpty(t, buf.String(), "Buffer should show conflict for same ID with different start times")
-}
-
-func TestConflictManager_GetConflicts_DifferentIDSameStartAndClientShowsMismatch(t *testing.T) {
-	now := time.Now()
-	clientName := "ClientA"
-	localSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now), Client: models.Client{Name: clientName}},
-	}
-	remoteSessions := []models.Session{
-		{ID: uint32Ptr(2), Start: timePtr(now), Client: models.Client{Name: clientName}},
-	}
-
-	buf, err := GetConflicts(localSessions, remoteSessions)
-	assert.NoError(t, err)
-	assert.NotNil(t, buf)
-	assert.NotEmpty(t, buf.String(), "Buffer should show conflict for different IDs with same start time and client")
-}
-
-func TestConflictManager_GetConflicts_LocalIDButNoRemoteIDAndSimilarTimesMismatch(t *testing.T) {
-	now := time.Now()
-	localSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now)},
-	}
-	remoteSessions := []models.Session{
-		{Start: timePtr(now.Add(5 * time.Minute))},
-	}
-
-	buf, err := GetConflicts(localSessions, remoteSessions)
-	assert.NoError(t, err)
-	assert.NotNil(t, buf)
-	assert.NotEmpty(t, buf.String(), "Buffer should show conflict for local ID with no remote ID and similar times")
 }
 
 func TestConflictManager_GetConflicts_SameIDDiffererentCompanyMismatch(t *testing.T) {
