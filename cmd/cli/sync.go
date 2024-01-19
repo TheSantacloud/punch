@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/dormunis/punch/pkg/editor"
 	"github.com/dormunis/punch/pkg/models"
@@ -94,6 +95,10 @@ func pull(source sync.SyncSource) error {
 	if err != nil {
 		return err
 	}
+
+	sort.SliceStable(*deserializedSessions, func(i, j int) bool {
+		return (*deserializedSessions)[i].Start.Before(*(*deserializedSessions)[j].Start)
+	})
 
 	for _, session := range *deserializedSessions {
 		err = SessionRepository.Upsert(&session, false)
