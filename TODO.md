@@ -3,3 +3,4 @@
 - [ ] bug: get --month doesn't work
 - [ ] bug: editing previous session (not latest) gives out message that all the records have been updated
 - [ ] feat: merge sessions
+- [ ] bug: sync is not ordered by date/id
