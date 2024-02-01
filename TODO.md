@@ -1,1 +1,3 @@
 - [ ] bug: end time < start time (multiday)
+- [ ] bug: edit session <id> doesnt work
+- [ ] bug: get --month doesn't work
