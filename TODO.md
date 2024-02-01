@@ -1,3 +1,4 @@
 - [ ] bug: end time < start time (multiday)
 - [ ] bug: edit session <id> doesnt work
 - [ ] bug: get --month doesn't work
+- [ ] bug: editing previous session (not latest) gives out message that all the records have been updated
