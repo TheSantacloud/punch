@@ -30,6 +30,21 @@ var (
 	allReport       bool
 )
 
+func GetSessionsFromArgs(args []string, clientName string) ([]models.Session, error) {
+	var sessions *[]models.Session
+	var err error
+
+	if len(args) == 0 {
+		sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
+	} else {
+		sessions, err = GetRelativeSessionsFromArgs(args, clientName)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return *sessions, nil
+}
+
 func GetSessionsWithTimeframe(timeframe ReportTimeframe) (*[]models.Session, error) {
 	var slice []models.Session
 
@@ -53,11 +68,29 @@ func GetSessionsWithTimeframe(timeframe ReportTimeframe) (*[]models.Session, err
 }
 
 func GetRelativeSessionsFromArgs(args []string, clientName string) (*[]models.Session, error) {
+	session, err := GetSessionByID(args[0])
+	if err == nil {
+		return &[]models.Session{*session}, nil
+	}
+
 	startDate, endDate, err := ExtractParsedTimeFromArgs(args, clientName)
 	if err != nil {
 		return nil, err
 	}
 	return SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
+}
+
+func GetSessionByID(id string) (*models.Session, error) {
+	sessionId, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := SessionRepository.GetSessionByID(uint32(sessionId))
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
 }
 
 func FilterSessionsByClient(sessions *[]models.Session, clientName string) *[]models.Session {

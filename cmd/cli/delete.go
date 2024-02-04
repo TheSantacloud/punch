@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"slices"
-	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -33,12 +32,7 @@ var deleteSessionCmd = &cobra.Command{
 	Short:   "delete a specific session by id",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sessionId, err := strconv.ParseUint(args[0], 10, 32)
-		if err != nil {
-			return err
-		}
-
-		session, err := SessionRepository.GetSessionByID(uint32(sessionId))
+		session, err := GetSessionByID(args[0])
 		if err != nil {
 			return err
 		}
@@ -48,7 +42,7 @@ var deleteSessionCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("Deleted session (%d) %s\n", sessionId, session.String())
+		fmt.Printf("Deleted session (%d) %s\n", *session.ID, session.String())
 
 		if slices.Contains(Config.Settings.AutoSync, "delete") {
 			err = Sync()

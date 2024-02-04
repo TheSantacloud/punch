@@ -75,22 +75,14 @@ var editSessionCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var sessions *[]models.Session
-		var err error
-
-		if len(args) == 1 {
-			sessions, err = GetRelativeSessionsFromArgs(args, clientName)
-		} else {
-			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
-		}
-
+		sessions, err := GetSessionsFromArgs(args, clientName)
 		if err != nil {
 			return err
 		}
 
-		SortSessions(sessions, descendingOrder)
+		SortSessions(&sessions, descendingOrder)
 
-		editedSessions, err := editSessionSlice(sessions)
+		editedSessions, err := editSessionSlice(&sessions)
 		if err != nil {
 			return err
 		}
@@ -106,7 +98,7 @@ var editSessionCmd = &cobra.Command{
 		}
 		fmt.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
 
-		deletedSessions := sync.DetectDeletedSessions(sessions, &editedSessions)
+		deletedSessions := sync.DetectDeletedSessions(&sessions, &editedSessions)
 		if len(deletedSessions) > 0 && verifyDeletion(deletedSessions) {
 			for _, session := range deletedSessions {
 				err = SessionRepository.Delete(&session, false)

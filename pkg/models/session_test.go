@@ -8,9 +8,9 @@ import (
 )
 
 func sampleSession() Session {
-	now := time.Now()
+	now := time.Date(2022, time.January, 1, 9, 0, 0, 0, time.UTC)
 	later := now.Add(2 * time.Hour)
-	client := Client{Name: "Test Client", Currency: "USD", PPH: 50}
+	client := Client{Name: "Test Client", Currency: "USD", PPH: 42069}
 	id := uint32(1)
 
 	return Session{
