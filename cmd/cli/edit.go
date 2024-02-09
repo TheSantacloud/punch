@@ -89,13 +89,17 @@ var editSessionCmd = &cobra.Command{
 
 		sessionsUpdatedCount := 0
 		for _, session := range editedSessions {
-			err = SessionRepository.Update(&session, false)
-			if err != nil {
-				fmt.Printf("Unable to update session %s: %v\n", session.Start, err)
-			} else {
-				sessionsUpdatedCount++
+			for _, previousSession := range sessions {
+				if *session.ID == *previousSession.ID && !previousSession.Equals(session) {
+					sessionsUpdatedCount++
+					err = SessionRepository.Update(&session, false)
+					if err != nil {
+						fmt.Printf("Unable to update session %s: %v\n", session.Start, err)
+					}
+				}
 			}
 		}
+
 		fmt.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
 
 		deletedSessions := sync.DetectDeletedSessions(&sessions, &editedSessions)
