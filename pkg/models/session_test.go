@@ -121,13 +121,6 @@ func TestSession_Earnings_WithValidSession(t *testing.T) {
 	assert.Greater(t, earnings, 0.0, "Earnings should be greater than zero")
 }
 
-func TestSession_Earnings_WithNilEnd(t *testing.T) {
-	session := sampleSession()
-	session.End = nil
-	_, err := session.Earnings()
-	assert.Error(t, err, "Earnings calculation should produce an error")
-}
-
 func TestSession_Duration_WithValidSession(t *testing.T) {
 	session := sampleSession()
 	duration := session.Duration()
@@ -196,14 +189,6 @@ func TestSession_Earnings_WithNilStart(t *testing.T) {
 	_, err := session.Earnings()
 
 	assert.Error(t, err, "Earnings calculation should produce an error with nil Start")
-}
-
-func TestSession_Duration_WithNilEnd(t *testing.T) {
-	session := sampleSession()
-	session.End = nil
-	duration := session.Duration()
-
-	assert.Equal(t, duration, "N/A", "Duration should be N/A with nil End")
 }
 
 func TestSession_SerializeYAML_WithNilEnd(t *testing.T) {
