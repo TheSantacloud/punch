@@ -41,11 +41,11 @@ var syncCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Sync()
+		return Sync(cmd)
 	},
 }
 
-func Sync() error {
+func Sync(cmd *cobra.Command) error {
 	err := pull(*Source)
 	if err != nil {
 		return err
@@ -60,9 +60,16 @@ func Sync() error {
 		return err
 	}
 
-	err = (*Source).Push(newSessions)
+	summary, err := (*Source).Push(newSessions)
 	if err != nil {
 		return err
+	}
+
+	if summary.Added > 0 {
+		cmd.Println("Added", summary.Added, "sessions")
+	}
+	if summary.Updated > 0 {
+		cmd.Println("Updated", summary.Updated, "sessions")
 	}
 
 	return nil

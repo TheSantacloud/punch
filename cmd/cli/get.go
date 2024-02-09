@@ -17,6 +17,8 @@ var (
 	descendingOrder bool
 	summary         bool
 	hideHeaders     bool
+
+    NoAvailableDataError = errors.New("No available data")
 )
 
 var getCmd = &cobra.Command{
@@ -35,14 +37,14 @@ var getClientCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("Unable to get client: %v", err)
 			}
-			fmt.Println(client.String())
+			rootCmd.Println(client.String())
 		} else {
 			clients, err := ClientRepository.GetAll()
 			if err != nil {
 				return fmt.Errorf("Unable to get clients: %v", err)
 			}
 			for _, client := range clients {
-				fmt.Println(client.String())
+				rootCmd.Println(client.String())
 			}
 		}
 		return nil
@@ -90,14 +92,14 @@ punch get session 01-01`,
 		if err != nil {
 			return err
 		}
-		fmt.Print(*content)
+		rootCmd.Print(*content)
 		return nil
 	},
 }
 
 func generateView(slice *[]models.Session) (*string, error) {
 	if len(*slice) == 0 {
-		return nil, errors.New("No available data")
+		return nil, NoAvailableDataError
 	}
 	var (
 		buffer  *bytes.Buffer

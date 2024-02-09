@@ -157,7 +157,7 @@ func loadConfig() (*Config, error) {
 
 	err = validate.Struct(conf)
 	if err != nil {
-		fmt.Printf("Validation errors: %v\n", err)
+		return nil, err
 	}
 
 	return conf, nil

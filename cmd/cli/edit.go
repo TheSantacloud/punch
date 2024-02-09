@@ -56,7 +56,7 @@ var editClientCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Updated client %s\n", updateClient.Name)
+		rootCmd.Printf("Updated client %s\n", updateClient.Name)
 		return nil
 	},
 }
@@ -94,27 +94,27 @@ var editSessionCmd = &cobra.Command{
 					sessionsUpdatedCount++
 					err = SessionRepository.Update(&session, false)
 					if err != nil {
-						fmt.Printf("Unable to update session %s: %v\n", session.Start, err)
+						rootCmd.Printf("Unable to update session %s: %v\n", session.Start, err)
 					}
 				}
 			}
 		}
 
-		fmt.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
+		rootCmd.Printf("Updated %d session(s)\n", sessionsUpdatedCount)
 
 		deletedSessions := sync.DetectDeletedSessions(&sessions, &editedSessions)
 		if len(deletedSessions) > 0 && verifyDeletion(deletedSessions) {
 			for _, session := range deletedSessions {
 				err = SessionRepository.Delete(&session, false)
 				if err != nil {
-					fmt.Printf("Unable to delete session %s: %v\n", session.String(), err)
+					rootCmd.Printf("Unable to delete session %s: %v\n", session.String(), err)
 				}
 			}
-			fmt.Printf("Deleted %d session(s)\n", len(deletedSessions))
+			rootCmd.Printf("Deleted %d session(s)\n", len(deletedSessions))
 		}
 
 		if slices.Contains(Config.Settings.AutoSync, "edit") {
-			err = Sync()
+			err = Sync(rootCmd)
 			if err != nil {
 				return err
 			}
@@ -147,8 +147,8 @@ func verifyDeletion(deleted []models.Session) bool {
 		return true
 	}
 
-	fmt.Printf("Detected %d deleted session(s)\n", len(deleted))
-	fmt.Print("Are you sure you want to delete these sessions (y/n)? ")
+	rootCmd.Printf("Detected %d deleted session(s)\n", len(deleted))
+	rootCmd.Print("Are you sure you want to delete these sessions (y/n)? ")
 	var answer string
 	fmt.Scanln(&answer)
 

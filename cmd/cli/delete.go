@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/spf13/cobra"
@@ -42,10 +41,10 @@ var deleteSessionCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("Deleted session (%d) %s\n", *session.ID, session.String())
+		rootCmd.Printf("Deleted session (%d) %s\n", *session.ID, session.String())
 
 		if slices.Contains(Config.Settings.AutoSync, "delete") {
-			err = Sync()
+			err = Sync(rootCmd)
 			if err != nil {
 				return err
 			}

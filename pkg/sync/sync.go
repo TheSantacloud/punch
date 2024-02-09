@@ -9,10 +9,16 @@ import (
 	"github.com/dormunis/punch/pkg/sync/adapters/sheets"
 )
 
+type PushSummary struct {
+	Added   int
+	Updated int
+	Errors  []error
+}
+
 type SyncSource interface {
 	Type() string
 	Pull() ([]models.Session, error)
-	Push(*[]models.Session) error
+	Push(*[]models.Session) (PushSummary, error)
 }
 
 var (

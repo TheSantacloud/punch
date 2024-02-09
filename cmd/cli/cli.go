@@ -49,23 +49,20 @@ var rootCmd = &cobra.Command{
 		}
 
 		if session.End != nil {
-			err := printEOD(session)
+			err := printEOD(cmd, session)
 			if err != nil {
 				return err
 			}
 			if slices.Contains(Config.Settings.AutoSync, "end") {
-				err = Sync()
+				err = Sync(cmd)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			err := printBOD(session)
-			if err != nil {
-				return err
-			}
+			printBOD(cmd, session)
 			if slices.Contains(Config.Settings.AutoSync, "start") {
-				err = Sync()
+				err = Sync(cmd)
 				if err != nil {
 					return err
 				}

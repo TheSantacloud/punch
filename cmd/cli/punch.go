@@ -25,13 +25,10 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = printBOD(session)
-		if err != nil {
-			return err
-		}
+		printBOD(cmd, session)
 
 		if slices.Contains(Config.Settings.AutoSync, "start") {
-			err = Sync()
+			err = Sync(rootCmd)
 			if err != nil {
 				return err
 			}
@@ -62,13 +59,13 @@ var endCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = printEOD(session)
+		err = printEOD(cmd, session)
 		if err != nil {
 			return err
 		}
 
 		if slices.Contains(Config.Settings.AutoSync, "end") {
-			err = Sync()
+			err = Sync(rootCmd)
 			if err != nil {
 				return err
 			}
@@ -77,28 +74,21 @@ var endCmd = &cobra.Command{
 	},
 }
 
-func printBOD(session *models.Session) error {
-	_, err := fmt.Printf("Clocked in at %s\n", session.Start.Format("15:04:05"))
-	if err != nil {
-		return err
-	}
-	return nil
+func printBOD(cmd *cobra.Command, session *models.Session) {
+	fmt.Printf("Clocked in at %s\n", session.Start.Format("15:04:05"))
 }
 
-func printEOD(session *models.Session) error {
+func printEOD(cmd *cobra.Command, session *models.Session) error {
 	earnings, err := session.Earnings()
 	duration := session.End.Sub(*session.Start)
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Printf("Clocked out at %s after %s (%.2f %s)\n",
+	cmd.Printf("Clocked out at %s after %s (%.2f %s)\n",
 		session.End.Format("15:04:05"),
 		duration,
 		earnings,
 		session.Client.Currency)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

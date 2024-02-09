@@ -48,10 +48,10 @@ func (s *SheetsSyncSource) Pull() ([]models.Session, error) {
 	return sessions, nil
 }
 
-func (s *SheetsSyncSource) Push(sessions *[]models.Session) error {
+func (s *SheetsSyncSource) Push(sessions *[]models.Session) (PushSummary, error) {
 	err := s.parseSheetIfNeeded()
 	if err != nil {
-		return err
+		return PushSummary{}, err
 	}
 
 	mappedSessions := mapSessionsToRecords(sessions, s.cachedData)
@@ -67,7 +67,7 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session) error {
 				record.Session = session
 				recordsToUpdate = append(recordsToUpdate, record)
 			} else if record.Session.Conflicts(session) {
-				return fmt.Errorf("Session %v conflicts with %v",
+				return PushSummary{}, fmt.Errorf("Session %v conflicts with %v",
 					record.Session.String(), session.String())
 			} else if *record.Session.ID != *session.ID {
 				record.Session = session
@@ -81,31 +81,25 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session) error {
 		}
 	}
 
-	if len(sessionsToAdd) == 0 {
-		fmt.Println("No sessions to add")
-	}
-
 	// TODO: do this in bulk
 	for _, session := range sessionsToAdd {
 		err := s.Sheet.AddRow(session)
 		if err != nil {
-			return err
+			return PushSummary{}, err
 		}
-		fmt.Printf("Added session %v\n", session.String())
 	}
 
-	if len(recordsToUpdate) == 0 {
-		fmt.Println("No records to update")
-	}
 	// TODO: do this in bulk
 	for _, record := range recordsToUpdate {
 		err := s.Sheet.UpdateRow(*record)
 		if err != nil {
-			return err
+			return PushSummary{}, err
 		}
-		fmt.Printf("Updated record %v\n", record.Session.String())
 	}
-	return nil
+	return PushSummary{
+		Added:   len(sessionsToAdd),
+		Updated: len(recordsToUpdate),
+	}, nil
 }
 
 func mapSessionsToRecords(
