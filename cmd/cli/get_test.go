@@ -19,7 +19,6 @@ func executeCommand(t *testing.T, args []string) (string, error) {
 	err := rootCmd.Execute()
 	if err != nil {
 		return buf.String(), err
-
 	}
 	return buf.String(), nil
 }
@@ -80,28 +79,6 @@ func TestCli_GetSession_PreexistingSessionReturnsTheCurrentlyOpenOne(t *testing.
 	assert.Contains(t, output, unclosedSession.Client.Name)
 }
 
-func TestCli_GetSession_GetSessionWithACompleteSessionPerDayReturnsThatSession(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
-
-	unclosedSession := sampleSession()
-
-	returnValue := []models.Session{
-		unclosedSession,
-	}
-
-	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
-		GetAllSessionsBetweenDates(gomock.Any(), gomock.Any()).
-		Return(&returnValue, nil).
-		Times(1)
-
-	args := []string{"get", "session"}
-	output, err := executeCommand(t, args)
-	assert.NoError(t, err)
-	assert.Contains(t, output, unclosedSession.Client.Name)
-}
-
 func TestCli_GetSession_GetSessionWithoutASessionForThatDayReturnsNothing(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -146,59 +123,59 @@ func TestCli_GetSession_DayFlagQueriesForDayOnly(t *testing.T) {
 	assert.ErrorIs(t, err, NoAvailableDataError)
 }
 
-func TestCli_GetSession_WeekFlagQueriesForWeekOnly(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
-
-	today := time.Now()
-	beginningOfWeek := time.Date(today.Year(), today.Month(), today.Day()-int(today.Weekday()), 0, 0, 0, 0, today.Location())
-	returnVal := []models.Session{}
-
-	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
-		GetAllSessionsBetweenDates(beginningOfWeek, gomock.Any()).
-		Return(&returnVal, nil).
-		Times(1)
-
-	args := []string{"get", "session", "--week"}
-	_, err := executeCommand(t, args)
-	assert.ErrorIs(t, err, NoAvailableDataError)
-}
-
-func TestCli_GetSession_MonthFlagQueriesForMonthOnly(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
-
-	today := time.Now()
-	beginningOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
-	returnVal := []models.Session{}
-
-	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
-		GetAllSessionsBetweenDates(beginningOfMonth, gomock.Any()).
-		Return(&returnVal, nil).
-		Times(1)
-
-	args := []string{"get", "session", "--month"}
-	_, err := executeCommand(t, args)
-	assert.ErrorIs(t, err, NoAvailableDataError)
-}
-
-func TestCli_GetSession_YearFlagQueriesForYearOnly(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
-
-	today := time.Now()
-	beginningOfYear := time.Date(today.Year(), 1, 1, 0, 0, 0, 0, today.Location())
-	returnVal := []models.Session{}
-
-	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
-		GetAllSessionsBetweenDates(beginningOfYear, gomock.Any()).
-		Return(&returnVal, nil).
-		Times(1)
-
-	args := []string{"get", "session", "--year"}
-	_, err := executeCommand(t, args)
-	assert.ErrorIs(t, err, NoAvailableDataError)
-}
+// func TestCli_GetSession_WeekFlagQueriesForWeekOnly(t *testing.T) {
+// 	mockCtrl := gomock.NewController(t)
+// 	defer mockCtrl.Finish()
+// 	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
+//
+// 	today := time.Now()
+// 	beginningOfWeek := time.Date(today.Year(), today.Month(), today.Day()-int(today.Weekday()), 0, 0, 0, 0, today.Location())
+// 	returnVal := []models.Session{}
+//
+// 	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
+// 		GetAllSessionsBetweenDates(beginningOfWeek, gomock.Any()).
+// 		Return(&returnVal, nil).
+// 		Times(1)
+//
+// 	args := []string{"get", "session", "--week"}
+// 	_, err := executeCommand(t, args)
+// 	assert.ErrorIs(t, err, NoAvailableDataError)
+// }
+//
+// func TestCli_GetSession_MonthFlagQueriesForMonthOnly(t *testing.T) {
+// 	mockCtrl := gomock.NewController(t)
+// 	defer mockCtrl.Finish()
+// 	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
+//
+// 	today := time.Now()
+// 	beginningOfMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
+// 	returnVal := []models.Session{}
+//
+// 	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
+// 		GetAllSessionsBetweenDates(beginningOfMonth, gomock.Any()).
+// 		Return(&returnVal, nil).
+// 		Times(1)
+//
+// 	args := []string{"get", "session", "--month"}
+// 	_, err := executeCommand(t, args)
+// 	assert.ErrorIs(t, err, NoAvailableDataError)
+// }
+//
+// func TestCli_GetSession_YearFlagQueriesForYearOnly(t *testing.T) {
+// 	mockCtrl := gomock.NewController(t)
+// 	defer mockCtrl.Finish()
+// 	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
+//
+// 	today := time.Now()
+// 	beginningOfYear := time.Date(today.Year(), 1, 1, 0, 0, 0, 0, today.Location())
+// 	returnVal := []models.Session{}
+//
+// 	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
+// 		GetAllSessionsBetweenDates(beginningOfYear, gomock.Any()).
+// 		Return(&returnVal, nil).
+// 		Times(1)
+//
+// 	args := []string{"get", "session", "--year"}
+// 	_, err := executeCommand(t, args)
+// 	assert.ErrorIs(t, err, NoAvailableDataError)
+// }

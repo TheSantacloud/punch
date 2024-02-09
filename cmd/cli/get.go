@@ -18,7 +18,7 @@ var (
 	summary         bool
 	hideHeaders     bool
 
-    NoAvailableDataError = errors.New("No available data")
+	NoAvailableDataError = errors.New("No available data")
 )
 
 var getCmd = &cobra.Command{
