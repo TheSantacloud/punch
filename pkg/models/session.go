@@ -56,26 +56,39 @@ func (s Session) Finished() bool {
 }
 
 func (s Session) Earnings() (float64, error) {
-	if s.Start == nil || s.End == nil {
+	if s.Start == nil {
 		return 0, fmt.Errorf("Session not started or ended")
 	}
-	delta := s.End.Sub(*s.Start)
+	end := time.Now()
+	if s.End != nil {
+		end = *s.End
+	}
+	delta := end.Sub(*s.Start)
 	hours := delta.Hours()
 	value := float64(s.Client.PPH) * hours
 	return value, nil
 }
 
 func (s Session) Duration() string {
-	if s.Start == nil || s.End == nil {
+	if s.Start == nil {
 		return "N/A"
 	}
 
-	delta := s.End.Sub(*s.Start)
+	end := time.Now()
+	if s.End != nil {
+		end = *s.End
+	}
+
+	delta := end.Sub(*s.Start)
 	hours := int(delta.Hours())
 	minutes := int(delta.Minutes()) % 60
 	seconds := int(delta.Seconds()) % 60
 
-	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	returnValue := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	if s.End == nil {
+		returnValue = "~" + returnValue
+	}
+	return returnValue
 }
 
 func (s Session) SerializeYAML() (*[]byte, error) {

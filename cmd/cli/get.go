@@ -54,7 +54,7 @@ var getSessionCmd = &cobra.Command{
 	Short: "Get a work session",
 	Long: `Get a work session. If no date is specified, the latest of current day is used.
     If a date is specified, the format must be YYYY-MM-DD.`,
-	Example: `punch get session 
+	Example: `punch get session
 punch get session 2020-01-01
 punch get session 01-01`,
 	Args:    cobra.MaximumNArgs(1),
@@ -233,9 +233,10 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 			id = fmt.Sprintf("%d", *session.ID)
 		}
 
-		earnings, err := session.Earnings()
-		if err != nil {
-			return "", err
+		earnings, _ := session.Earnings()
+		endTime := "N/A"
+		if session.End != nil {
+			endTime = session.End.Format("15:04:05")
 		}
 
 		if verbose {
@@ -244,7 +245,7 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 				session.Start.Format("2006-01-02"),
 				session.Client.Name,
 				session.Start.Format("15:04:05"),
-				session.End.Format("15:04:05"),
+				endTime,
 				session.Duration(),
 				earnings,
 				session.Client.Currency,
