@@ -93,6 +93,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&currentClientName, "client", "c", "", "Specify a client's name")
 	rootCmd.Flags().StringVarP(&punchMessage, "message", "m", "", "Comment or message")
 	rootCmd.AddCommand(configCmd)
+	rootCmd.SetOut(os.Stdout)
 }
 
 func Execute(cfg *config.Config) error {
