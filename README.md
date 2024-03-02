@@ -11,7 +11,7 @@ I developed it for myself, and thought that this might benefit other people so I
 To install Punch, clone the repository and run `make` in the project directory:
 
 ```
-git clone git@github.com:dormunis/punch.git 
+git clone git@github.com:dormunis/punch.git
 cd punch
 make
 ```
@@ -41,7 +41,7 @@ Punch is a command line tool designed for freelancers to manage work sessions an
 
   ```bash
   punch start        # start session
-  punch start [date] # start session at [date] 
+  punch start [date] # start session at [date]
   punch start -- -2m    # start session 2 minutes ago
   punch end          # end session
   punch end [date]   # end session at [date]
@@ -57,7 +57,7 @@ Punch is a command line tool designed for freelancers to manage work sessions an
   - y - year
 
 ### Get Command
-- **Retrieve Client or Session Details**: Use the `get` command to fetch details about clients or work sessions. 
+- **Retrieve Client or Session Details**: Use the `get` command to fetch details about clients or work sessions.
 
   Get details of a specific client:
   ```bash
@@ -70,8 +70,8 @@ Punch is a command line tool designed for freelancers to manage work sessions an
   punch get session [date] -v       # get sessions from [date] with verbose information
   punch get session --week -v       # get verbose sessions from last day/week/month/year
   punch get session -- -1.5w        # get all sessions from the past 1.5 weeks
-  punch get session HEAD~3 -c Acme  # get last 3 sessions from Acme
-  punch get session --all -v -o csv # get verbose information in CSV format 
+  punch get session -3 -c Acme      # get last 3 sessions from Acme
+  punch get session --all -v -o csv # get verbose information in CSV format
   ```
 
 ### Add Command
@@ -80,7 +80,7 @@ Punch is a command line tool designed for freelancers to manage work sessions an
   Add a new client:
   ```bash
   punch add client [client_name] [hourly_rate] # currency default to the configured custom_currency
-  punch add client [client_name] [hourly_rate] --currency EUR 
+  punch add client [client_name] [hourly_rate] --currency EUR
   ```
 
 ### Delete Command
@@ -103,7 +103,7 @@ Punch is a command line tool designed for freelancers to manage work sessions an
 
 ### Additional Tips
 - **Setting a Default Client**: For the `punch` toggle feature to work seamlessly, set a default client in your `config.toml`. This eliminates the need to specify a client each time you start a session.
-- **Setting a Default Currency**: Currency is set whenever you add a new client, you can bypass it by setting a `default_currency` in the `config.toml` 
+- **Setting a Default Currency**: Currency is set whenever you add a new client, you can bypass it by setting a `default_currency` in the `config.toml`
 - **Config easy access**: use `punch config` to access the config file.
 - **Help and Command Options**: For more detailed usage of each command, you can use the `--help` option with any command to get additional information and options available.
 
@@ -113,7 +113,7 @@ Punch uses a TOML based configuration
 
 Punch configuration can be accessed by using `punch config` or in `~/.punch/config.toml`.
 
-A default configuration will be generated for you in the aforementioned directory, but 
+A default configuration will be generated for you in the aforementioned directory, but
 `punch` can use a different config file given the `PUNCH_CONFIG_FILE` environment variable.
 
 ### General Structure

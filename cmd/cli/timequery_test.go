@@ -30,7 +30,7 @@ func TestTimeQuery_ExtractTime_CountDelta_InvalidHeadInput_Invalid(t *testing.T)
 		GetLastSessions(gomock.Any(), gomock.Any()).
 		Times(0)
 
-	_, _, err := ExtractTime("HEAD~x", &client)
+	_, _, err := ExtractTime("-x", &client)
 	assert.Error(t, err)
 }
 
@@ -44,7 +44,7 @@ func TestTimeQuery_ExtractTime_CountDelta_InvalidHeadInput_Empty(t *testing.T) {
 		GetLastSessions(gomock.Any(), gomock.Any()).
 		Times(0)
 
-	_, _, err := ExtractTime("HEAD~", &client)
+	_, _, err := ExtractTime("-", &client)
 	assert.Error(t, err)
 }
 
@@ -64,7 +64,7 @@ func TestTimeQuery_ExtractTime_CountDelta_2(t *testing.T) {
 		GetLastSessions(count, &client).
 		Return(&sessions, nil)
 
-	start, end, err := ExtractTime("HEAD~2", &client)
+	start, end, err := ExtractTime("-2", &client)
 	assert.NoError(t, err)
 	assert.NotNil(t, start)
 	assert.NotNil(t, end)

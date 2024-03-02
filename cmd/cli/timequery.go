@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/dormunis/punch/pkg/models"
 )
@@ -14,9 +15,7 @@ func ExtractTime(input string, client *models.Client) (time.Time, time.Time, err
 	var err error
 
 	if strings.HasPrefix(input, "-") {
-		return extractFromTimeDelta(input)
-	} else if strings.Contains(input, "HEAD~") {
-		return extractFromCountDelta(input, client)
+		return extractRelativeTime(input, client)
 	}
 
 	parsedTime, err = time.Parse("2006", input)
@@ -40,11 +39,16 @@ func ExtractTime(input string, client *models.Client) (time.Time, time.Time, err
 	return time.Time{}, time.Time{}, fmt.Errorf("invalid time format")
 }
 
-func extractFromTimeDelta(input string) (time.Time, time.Time, error) {
+func extractRelativeTime(input string, client *models.Client) (time.Time, time.Time, error) {
 	var parsedTime time.Time
 	var err error
 
 	suffix := input[len(input)-1:]
+
+	if unicode.IsDigit(rune(suffix[0])) {
+		return extractFromCountDelta(input, client)
+	}
+
 	switch suffix {
 	case "d":
 		input, err = parseDurationMoreThanHour(input, 24)
@@ -69,7 +73,7 @@ func extractFromTimeDelta(input string) (time.Time, time.Time, error) {
 }
 
 func extractFromCountDelta(input string, client *models.Client) (time.Time, time.Time, error) {
-	count, err := strconv.Atoi(input[len("HEAD~"):])
+	count, err := strconv.Atoi(input[len("-"):])
 	if err != nil || count < 1 {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid count format, must be ~<positive integer>")
 	}
