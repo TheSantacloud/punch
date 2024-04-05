@@ -75,9 +75,11 @@ var editSessionCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sessions, err := GetSessionsFromArgs(args, clientName)
-		if err != nil {
-			return err
+		var sessions []models.Session
+		if len(args) == 0 {
+			sessions = GetSessionsWithTimeframe(*reportTimeframe)
+		} else {
+			sessions = GetRelativeSessionsFromArgs(args, clientName)
 		}
 
 		SortSessions(&sessions, descendingOrder)

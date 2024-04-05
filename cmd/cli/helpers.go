@@ -30,54 +30,53 @@ var (
 	allReport       bool
 )
 
-func GetSessionsFromArgs(args []string, clientName string) ([]models.Session, error) {
-	var sessions *[]models.Session
-	var err error
-
-	if len(args) == 0 {
-		sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
-	} else {
-		sessions, err = GetRelativeSessionsFromArgs(args, clientName)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return *sessions, nil
-}
-
-func GetSessionsWithTimeframe(timeframe ReportTimeframe) (*[]models.Session, error) {
+func GetSessionsWithTimeframe(timeframe ReportTimeframe) []models.Session {
 	var slice []models.Session
 
 	startDate := getStartDate(timeframe)
 	endDate := getEndDate(timeframe, startDate)
 	sessions, err := SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
 	if err != nil {
-		return nil, err
+		return slice
 	}
 	for _, session := range *sessions {
 		if currentClientName != "" && session.Client.Name != currentClientName {
 			continue
 		}
-		if session.Start.After(startDate) &&
-			(session.End == nil ||
-				(session.End != nil && session.End.Before(endDate))) {
+		if isWithinTimeframe(*session.Start, startDate, endDate) &&
+			(session.End == nil || isWithinTimeframe(*session.End, startDate, endDate)) {
 			slice = append(slice, session)
 		}
 	}
-	return &slice, nil
+	return slice
 }
 
-func GetRelativeSessionsFromArgs(args []string, clientName string) (*[]models.Session, error) {
+func GetRelativeSessionsFromArgs(args []string, clientName string) []models.Session {
+	var slice []models.Session
 	session, err := GetSessionByID(args[0])
 	if err == nil {
-		return &[]models.Session{*session}, nil
+		slice = append(slice, *session)
+		return slice
 	}
 
 	startDate, endDate, err := ExtractParsedTimeFromArgs(args, clientName)
 	if err != nil {
-		return nil, err
+		return slice
 	}
-	return SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
+	sessions, err := SessionRepository.GetAllSessionsBetweenDates(startDate, endDate)
+	if err != nil {
+		return slice
+	}
+	for _, session := range *sessions {
+		if currentClientName != "" && session.Client.Name != currentClientName {
+			continue
+		}
+		if isWithinTimeframe(*session.Start, startDate, endDate) &&
+			(isWithinTimeframe(*session.End, startDate, endDate) || session.End == nil) {
+			slice = append(slice, session)
+		}
+	}
+	return slice
 }
 
 func GetSessionByID(id string) (*models.Session, error) {
@@ -184,6 +183,10 @@ func GetClientIfExists(name string) error {
 			currentClientName)
 	}
 	return nil
+}
+
+func isWithinTimeframe(date time.Time, startDate time.Time, endDate time.Time) bool {
+	return date.After(startDate) && date.Before(endDate)
 }
 
 func getStartDate(timeframe ReportTimeframe) time.Time {

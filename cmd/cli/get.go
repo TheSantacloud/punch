@@ -74,19 +74,19 @@ punch get session 01-01`,
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var sessions *[]models.Session
+		var sessions []models.Session
 		var err error
 
 		if len(args) == 1 {
-			sessions, err = GetRelativeSessionsFromArgs(args, clientName)
+			sessions = GetRelativeSessionsFromArgs(args, clientName)
 		} else {
-			sessions, err = GetSessionsWithTimeframe(*reportTimeframe)
+			sessions = GetSessionsWithTimeframe(*reportTimeframe)
 		}
 		if err != nil {
 			return err
 		}
 
-		filteredSessions := FilterSessionsByClient(sessions, clientName)
+		filteredSessions := FilterSessionsByClient(&sessions, clientName)
 		SortSessions(filteredSessions, descendingOrder)
 		content, err := generateView(filteredSessions)
 		if err != nil {

@@ -200,7 +200,10 @@ func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(start time.Time, e
 	var repoSessions []RepoSession
 	err := repo.db.Preload("Client").
 		Where("start >= ?", start).
-		Where("end < ? OR (end IS NULL OR end = '')", end).
+		Where(
+			repo.db.Where("end < ?", end).
+				Or("end IS NULL").
+				Or("end IS ''")).
 		Order("start DESC").
 		Find(&repoSessions).Error
 
@@ -214,6 +217,7 @@ func (repo *GORMSessionRepository) GetAllSessionsBetweenDates(start time.Time, e
 	for _, repoSession := range repoSessions {
 		sessions = append(sessions, ToDomainSession(repoSession))
 	}
+
 	return &sessions, nil
 }
 
