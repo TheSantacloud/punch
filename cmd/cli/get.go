@@ -170,16 +170,18 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 		}
 
 		data := clientData[client]
+		sessionEnd := time.Now()
 		if session.End != nil {
-			duration := session.End.Sub(*session.Start)
-			data.totalTime += duration
-			currencyData[currency] = struct {
-				totalTime   time.Duration
-				totalAmount float64
-			}{
-				totalTime:   currencyData[currency].totalTime + duration,
-				totalAmount: currencyData[currency].totalAmount,
-			}
+			sessionEnd = *session.End
+		}
+		duration := sessionEnd.Sub(*session.Start)
+		data.totalTime += duration.Truncate(time.Second)
+		currencyData[currency] = struct {
+			totalTime   time.Duration
+			totalAmount float64
+		}{
+			totalTime:   currencyData[currency].totalTime + duration,
+			totalAmount: currencyData[currency].totalAmount,
 		}
 		earnings, err := session.Earnings()
 		if err == nil {
