@@ -18,16 +18,6 @@ make
 
 ## Usage
 
-Sure, I can create a simple manual for using the "punch" CLI tool, focusing on the primary functionality and commands like `start`, `end`, `get`, `add`, `delete`, and `edit`. This manual will be structured to make it easy for users to understand and effectively use the tool.
-
----
-
-# Punch CLI Manual
-
-Punch is a command line tool designed for freelancers to manage work sessions and client information. Here's how to use its main features:
-
-## Basic Usage
-
 ### Starting and Ending Work Sessions
 - **Punch Toggle**: Simply entering `punch` toggles the work session. If a session is not started, it starts one. If a session is ongoing, it ends it. This functionality assumes you have a `default_client` set in your configuration.
 
