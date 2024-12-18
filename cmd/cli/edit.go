@@ -152,8 +152,10 @@ func verifyDeletion(deleted []models.Session) bool {
 	rootCmd.Printf("Detected %d deleted session(s)\n", len(deleted))
 	rootCmd.Print("Are you sure you want to delete these sessions (y/n)? ")
 	var answer string
-	fmt.Scanln(&answer)
-
+	decision, err := fmt.Scanln(&answer)
+	if decision != 1 || err != nil {
+		return false
+	}
 	return strings.ToLower(answer) == "y"
 
 }
