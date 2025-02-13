@@ -48,8 +48,11 @@ func TestEditableSession_ToSession_StartAfterEnd(t *testing.T) {
 		StartTime: "17:00:00",
 		EndTime:   "09:00:00",
 	}
-	_, err := ed.ToSession()
-	assert.Error(t, err)
+	session, err := ed.ToSession()
+	expectedDuration := ((24 - 17) + 9) * 60 * 60
+	assert.NoError(t, err)
+	assert.NotNil(t, session)
+	assert.Equal(t, expectedDuration, int(session.End.Sub(*session.Start).Seconds()))
 }
 
 func TestSerializeSessionsToYAML_ValidSessions(t *testing.T) {
