@@ -48,7 +48,7 @@ func (s *SheetsSyncSource) Pull() ([]models.Session, error) {
 	return sessions, nil
 }
 
-func (s *SheetsSyncSource) Push(sessions *[]models.Session) (PushSummary, error) {
+func (s *SheetsSyncSource) Push(sessions *[]models.Session, approvedDiffs *[]models.Session) (PushSummary, error) {
 	err := s.parseSheetIfNeeded()
 	if err != nil {
 		return PushSummary{}, err
@@ -67,8 +67,20 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session) (PushSummary, error)
 				record.Session = session
 				recordsToUpdate = append(recordsToUpdate, record)
 			} else if record.Session.Conflicts(session) {
-				return PushSummary{}, fmt.Errorf("Session %v conflicts with %v",
-					record.Session.String(), session.String())
+				approved := false
+				for _, diff := range *approvedDiffs {
+					fmt.Printf("session.id: %d | diff.id: %d\n", *session.ID, *diff.ID)
+					if *diff.ID == *session.ID {
+						record.Session = session
+						recordsToUpdate = append(recordsToUpdate, record)
+						approved = true
+						break
+					}
+				}
+				if !approved {
+					return PushSummary{}, fmt.Errorf("Session %v conflicts with %v",
+						record.Session.String(), session.String())
+				}
 			} else if *record.Session.ID != *session.ID {
 				record.Session = session
 				recordsToUpdate = append(recordsToUpdate, record)

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/dormunis/punch/pkg/editor"
@@ -46,7 +47,8 @@ var syncCmd = &cobra.Command{
 }
 
 func Sync(cmd *cobra.Command) error {
-	err := pull(*Source)
+	// TODO: add delete session
+	approvedDiffs, err := pull(*Source)
 	if err != nil {
 		return err
 	}
@@ -60,47 +62,44 @@ func Sync(cmd *cobra.Command) error {
 		return err
 	}
 
-	summary, err := (*Source).Push(newSessions)
+	summary, err := (*Source).Push(newSessions, approvedDiffs)
 	if err != nil {
 		return err
 	}
 
-	if summary.Added > 0 {
-		cmd.Println("Added", summary.Added, "sessions")
-	}
-	if summary.Updated > 0 {
-		cmd.Println("Updated", summary.Updated, "sessions")
+	if summary.Added+summary.Updated > 0 {
+		fmt.Printf("Synced %d sessions\n", summary.Added+summary.Updated)
 	}
 
 	return nil
 }
 
-func pull(source sync.SyncSource) error {
+func pull(source sync.SyncSource) (*[]models.Session, error) {
 	pulledSessions, err := source.Pull()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	sessions, err := SessionRepository.GetAllSessionsAllClients()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	conflictsBuffer, err := sync.GetConflicts(*sessions, pulledSessions)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if conflictsBuffer != nil && conflictsBuffer.Len() > 0 {
 		err = editor.InteractiveEdit(conflictsBuffer, "yaml")
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	deserializedSessions, err := models.DeserializeSessionsFromYAML(conflictsBuffer)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	sort.SliceStable(*deserializedSessions, func(i, j int) bool {
@@ -110,11 +109,11 @@ func pull(source sync.SyncSource) error {
 	for _, session := range *deserializedSessions {
 		err = SessionRepository.Upsert(&session, false)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return deserializedSessions, nil
 }
 
 func init() {

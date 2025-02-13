@@ -18,7 +18,7 @@ type PushSummary struct {
 type SyncSource interface {
 	Type() string
 	Pull() ([]models.Session, error)
-	Push(*[]models.Session) (PushSummary, error)
+	Push(*[]models.Session, *[]models.Session) (PushSummary, error)
 }
 
 var (
