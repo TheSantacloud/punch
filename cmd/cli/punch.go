@@ -74,8 +74,8 @@ var endCmd = &cobra.Command{
 	},
 }
 
-func printBOD(cmd *cobra.Command, session *models.Session) {
-	fmt.Printf("Clocked in at %s\n", session.Start.Format("15:04:05"))
+func printBOD(_ *cobra.Command, session *models.Session) {
+	fmt.Printf("Clocked in at %s for %s\n", session.Start.Format("15:04:05"), session.Client.Name)
 }
 
 func printEOD(cmd *cobra.Command, session *models.Session) error {
@@ -84,11 +84,13 @@ func printEOD(cmd *cobra.Command, session *models.Session) error {
 	if err != nil {
 		return err
 	}
-	cmd.Printf("Clocked out at %s after %s (%.2f %s)\n",
+	cmd.Printf("Clocked out at %s after %s (%.2f %s) for %s\n",
 		session.End.Format("15:04:05"),
 		duration,
 		earnings,
-		session.Client.Currency)
+		session.Client.Currency,
+		session.Client.Name,
+	)
 	return nil
 }
 

@@ -52,25 +52,20 @@ func Sync(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-
 	if pullOnly {
 		return nil
 	}
-
 	newSessions, err := SessionRepository.GetAllSessionsAllClients()
 	if err != nil {
 		return err
 	}
-
 	summary, err := (*Source).Push(newSessions, approvedDiffs)
 	if err != nil {
 		return err
 	}
-
 	if summary.Added+summary.Updated > 0 {
 		fmt.Printf("Synced %d sessions\n", summary.Added+summary.Updated)
 	}
-
 	return nil
 }
 
@@ -79,40 +74,33 @@ func pull(source sync.SyncSource) (*[]models.Session, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	sessions, err := SessionRepository.GetAllSessionsAllClients()
 	if err != nil {
 		return nil, err
 	}
-
 	conflictsBuffer, err := sync.GetConflicts(*sessions, pulledSessions)
 	if err != nil {
 		return nil, err
 	}
-
 	if conflictsBuffer != nil && conflictsBuffer.Len() > 0 {
 		err = editor.InteractiveEdit(conflictsBuffer, "yaml")
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	deserializedSessions, err := models.DeserializeSessionsFromYAML(conflictsBuffer)
 	if err != nil {
 		return nil, err
 	}
-
 	sort.SliceStable(*deserializedSessions, func(i, j int) bool {
 		return (*deserializedSessions)[i].Start.Before(*(*deserializedSessions)[j].Start)
 	})
-
 	for _, session := range *deserializedSessions {
 		err = SessionRepository.Upsert(&session, false)
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	return deserializedSessions, nil
 }
 

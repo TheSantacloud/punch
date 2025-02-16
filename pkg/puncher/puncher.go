@@ -71,6 +71,17 @@ func (p *Puncher) EndSession(session models.Session, timestamp time.Time, note s
 
 	session.End = &timestamp
 
+	lastyear := time.Date(time.Now().Year()-1, 1, 1, 0, 0, 0, 0, time.UTC).Year()
+	timestampDaysSinceLastYear := int(timestamp.Sub(time.Date(lastyear, 1, 1, 0, 0, 0, 0, time.UTC)).Hours() / 24)
+	startDaysSinceLastYear := int(session.Start.Sub(time.Date(lastyear, 1, 1, 0, 0, 0, 0, time.UTC)).Hours() / 24)
+	if timestampDaysSinceLastYear > startDaysSinceLastYear {
+		delta := timestampDaysSinceLastYear - startDaysSinceLastYear
+		if note != "" {
+			note += "; "
+		}
+		note += fmt.Sprintf("(+%d day)", int(delta))
+	}
+
 	if session.Note != "" {
 		session.Note = session.Note + "; " + note
 	} else {

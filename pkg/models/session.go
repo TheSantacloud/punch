@@ -45,10 +45,24 @@ func (s Session) Equals(session Session) bool {
 }
 
 func (s Session) Conflicts(session Session) bool {
-	return (session.ID != nil && s.ID != nil && *session.ID == *s.ID) &&
-		(((session.End != nil && s.End != nil) && (*s.End != *session.End)) ||
-			s.Client.Name != session.Client.Name ||
-			*s.Start != *session.Start)
+	if s.ID == nil || session.ID == nil || *s.ID != *session.ID {
+		return false
+	}
+	conflictReasons := []string{}
+	if s.Start != nil && session.Start != nil && *s.Start != *session.Start {
+		conflictReasons = append(conflictReasons, "different start times")
+	}
+	if s.End != nil && session.End != nil && *s.End != *session.End {
+		conflictReasons = append(conflictReasons, "different end times")
+	}
+	if s.Client.Name != session.Client.Name {
+		conflictReasons = append(conflictReasons, "different client names")
+	}
+	if len(conflictReasons) > 0 {
+		fmt.Printf("Session ID %d conflict: %s\n", *s.ID, fmt.Sprintf("%v", conflictReasons))
+		return true
+	}
+	return false
 }
 
 func (s Session) Finished() bool {
@@ -77,6 +91,10 @@ func (s Session) Duration() string {
 	end := time.Now()
 	if s.End != nil {
 		end = *s.End
+	}
+
+	if end.Before(*s.Start) {
+		end = end.AddDate(0, 0, 1)
 	}
 
 	delta := end.Sub(*s.Start)

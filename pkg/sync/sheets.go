@@ -58,6 +58,7 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session, approvedDiffs *[]mod
 
 	var sessionsToAdd []models.Session
 	var recordsToUpdate []*sheets.Record
+	var conflicts []models.Session
 
 	for session, record := range mappedSessions {
 		if record == nil {
@@ -78,8 +79,8 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session, approvedDiffs *[]mod
 					}
 				}
 				if !approved {
-					return PushSummary{}, fmt.Errorf("Session %v conflicts with %v",
-						record.Session.String(), session.String())
+					fmt.Printf("Conflict (ID: %v) between local and remote sessions\n", *session.ID)
+					conflicts = append(conflicts, session)
 				}
 			} else if *record.Session.ID != *session.ID {
 				record.Session = session
@@ -91,6 +92,10 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session, approvedDiffs *[]mod
 				recordsToUpdate = append(recordsToUpdate, record)
 			}
 		}
+	}
+
+	if len(conflicts) > 0 {
+		return PushSummary{}, fmt.Errorf("%d conflicts", len(conflicts))
 	}
 
 	// TODO: do this in bulk

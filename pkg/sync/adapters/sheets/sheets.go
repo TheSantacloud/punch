@@ -206,6 +206,10 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 		endTime = &parsedTime
 	}
 
+	if endTime != nil && endTime.Before(startTime) {
+		*endTime = endTime.AddDate(0, 0, 1)
+	}
+
 	var note string
 	if len(row) > noteColumnIndex {
 		note = row[noteColumnIndex].(string)
