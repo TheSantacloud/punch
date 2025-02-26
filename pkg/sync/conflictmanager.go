@@ -18,10 +18,10 @@ type ConflictingSessions struct {
 
 func GetConflicts(localSessions, remoteSessions []models.Session) (*bytes.Buffer, error) {
 	sort.SliceStable(localSessions, func(i, j int) bool {
-		return localSessions[i].Start.Before(*localSessions[j].Start)
+		return localSessions[i].Start.Before(localSessions[j].Start)
 	})
 	sort.SliceStable(remoteSessions, func(i, j int) bool {
-		return remoteSessions[i].Start.Before(*remoteSessions[j].Start)
+		return remoteSessions[i].Start.Before(remoteSessions[j].Start)
 	})
 	conflicts, err := findConflictingSessions(localSessions, remoteSessions)
 	if err != nil {
@@ -44,18 +44,13 @@ func findConflictingSessions(localSessions, remoteSessions []models.Session) (Co
 	remoteMap := make(map[uint32]models.Session)
 
 	for _, session := range remoteSessions {
-		if session.ID != nil {
-			remoteMap[*session.ID] = session
-		}
+		remoteMap[session.ID] = session
 	}
 
 	var conflicts ConflictingSessions
 
 	for _, localSession := range localSessions {
-		if localSession.ID == nil {
-			continue
-		}
-		if remoteSession, exists := remoteMap[*localSession.ID]; exists {
+		if remoteSession, exists := remoteMap[localSession.ID]; exists {
 			if localSession.Conflicts(remoteSession) {
 				conflicts.Local = append(conflicts.Local, localSession)
 				conflicts.Remote = append(conflicts.Remote, remoteSession)
@@ -157,7 +152,7 @@ func DetectDeletedSessions(sessions *[]models.Session, editedSessions *[]models.
 	for _, session := range *sessions {
 		found := false
 		for _, editedSession := range *editedSessions {
-			if *session.ID == *editedSession.ID {
+			if session.ID == editedSession.ID {
 				found = true
 				break
 			}

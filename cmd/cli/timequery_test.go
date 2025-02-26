@@ -10,10 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func timePtr(t time.Time) *time.Time {
-	return &t
-}
-
 func calculateDelta(start, end time.Time) time.Duration {
 	delta := end.Sub(start)
 	delta = delta - (delta % time.Second) // truncate milliseconds
@@ -51,8 +47,8 @@ func TestTimeQuery_ExtractTime_CountDelta_InvalidHeadInput_Empty(t *testing.T) {
 func TestTimeQuery_ExtractTime_CountDelta_2(t *testing.T) {
 	client := models.Client{Name: "test"}
 	sessions := []models.Session{
-		{Start: timePtr(time.Now().Add(-2 * time.Hour))},
-		{Start: timePtr(time.Now())},
+		{Start: time.Now().Add(-2 * time.Hour)},
+		{Start: time.Now()},
 	}
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

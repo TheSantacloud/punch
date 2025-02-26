@@ -93,7 +93,7 @@ func pull(source sync.SyncSource) (*[]models.Session, error) {
 		return nil, err
 	}
 	sort.SliceStable(*deserializedSessions, func(i, j int) bool {
-		return (*deserializedSessions)[i].Start.Before(*(*deserializedSessions)[j].Start)
+		return (*deserializedSessions)[i].Start.Before((*deserializedSessions)[j].Start)
 	})
 	for _, session := range *deserializedSessions {
 		err = SessionRepository.Upsert(&session, false)

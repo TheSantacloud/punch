@@ -24,14 +24,13 @@ type EditableSession struct {
 }
 
 func (ed EditableSession) ToSession() (*Session, error) {
-	var uintId *uint32
+	var uintId uint32
 	if ed.ID != "" {
 		id, err := strconv.ParseUint(ed.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format for session: %s", ed.ID)
 		}
-		uintId = new(uint32)
-		*uintId = uint32(id)
+		uintId = uint32(id)
 	}
 
 	client := Client{Name: ed.Client}
@@ -39,24 +38,23 @@ func (ed EditableSession) ToSession() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	var endTime *time.Time
+	var endTime time.Time
 	if ed.EndTime != "N/A" {
-		endTime = new(time.Time)
-		*endTime, err = time.ParseInLocation("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date, time.Local)
+		endTime, err = time.ParseInLocation("15:04:05 2006-01-02", ed.EndTime+" "+ed.Date, time.Local)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	if endTime != nil && (startTime.After(*endTime) || startTime.Equal(*endTime)) {
+	if endTime != NULL_TIME && (startTime.After(endTime) || startTime.Equal(endTime)) {
 		nextDayEndTime := endTime.AddDate(0, 0, 1)
-		endTime = &nextDayEndTime
+		endTime = nextDayEndTime
 	}
 
 	return &Session{
 		ID:     uintId,
 		Client: client,
-		Start:  &startTime,
+		Start:  startTime,
 		End:    endTime,
 		Note:   ed.Note,
 	}, nil
@@ -129,7 +127,7 @@ func DeserializeAndUpdateSessionsFromYAML(buf *bytes.Buffer, sessions *[]Session
 
 		updated := false
 		for _, session := range *sessions {
-			if *session.ID != uint32(id) {
+			if session.ID != uint32(id) {
 				continue
 			}
 			err = updateSession(ed, &session)
@@ -162,8 +160,8 @@ func updateSession(ed EditableSession, session *Session) error {
 		endTime = endTime.AddDate(0, 0, 1)
 	}
 
-	session.Start = &startTime
-	session.End = &endTime
+	session.Start = startTime
+	session.End = endTime
 	session.Note = ed.Note
 	return nil
 }
@@ -194,10 +192,7 @@ func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 
 	buf.WriteString("id,date,client,start_time,end_time,duration,amount,currency,note\n")
 	for _, session := range session {
-		id := "N/A"
-		if session.ID != nil {
-			id = fmt.Sprintf("%d", *session.ID)
-		}
+		id := fmt.Sprintf("%d", session.ID)
 
 		earnings, err := session.Earnings()
 		earningsString := "N/A"
@@ -206,7 +201,7 @@ func SerializeSessionsToFullCSV(session []Session) (*bytes.Buffer, error) {
 		}
 
 		end := "N/A"
-		if session.End != nil {
+		if session.End != NULL_TIME {
 			end = session.End.Format("15:04:05")
 		}
 

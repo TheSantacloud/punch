@@ -83,7 +83,7 @@ func extractFromCountDelta(input string, client *models.Client) (time.Time, time
 		return time.Time{}, time.Time{}, err
 	}
 
-	return *(*sessions)[len(*sessions)-1].Start, time.Now(), nil
+	return (*sessions)[len(*sessions)-1].Start, time.Now(), nil
 }
 
 func parseDurationMoreThanHour(input string, multiplier int) (string, error) {

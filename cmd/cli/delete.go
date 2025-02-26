@@ -41,7 +41,7 @@ var deleteSessionCmd = &cobra.Command{
 			return err
 		}
 
-		rootCmd.Printf("Deleted session (%d) %s\n", *session.ID, session.String())
+		rootCmd.Printf("Deleted session (%d) %s\n", session.ID, session.String())
 
 		if slices.Contains(Config.Settings.AutoSync, "delete") {
 			err = Sync(rootCmd)

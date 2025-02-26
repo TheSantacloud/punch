@@ -48,7 +48,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		if session.End != nil {
+		if session.Finished() {
 			err := printEOD(cmd, session)
 			if err != nil {
 				return err

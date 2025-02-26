@@ -19,7 +19,7 @@ func TestEditableSession_ToSession_Valid(t *testing.T) {
 	session, err := ed.ToSession()
 	assert.NoError(t, err)
 	assert.NotNil(t, session)
-	assert.Equal(t, uint32(1), *session.ID)
+	assert.Equal(t, uint32(1), session.ID)
 }
 
 func TestEditableSession_ToSession_InvalidID(t *testing.T) {
@@ -52,7 +52,7 @@ func TestEditableSession_ToSession_StartAfterEnd(t *testing.T) {
 	expectedDuration := ((24 - 17) + 9) * 60 * 60
 	assert.NoError(t, err)
 	assert.NotNil(t, session)
-	assert.Equal(t, expectedDuration, int(session.End.Sub(*session.Start).Seconds()))
+	assert.Equal(t, expectedDuration, int(session.End.Sub(session.Start).Seconds()))
 }
 
 func TestSerializeSessionsToYAML_ValidSessions(t *testing.T) {

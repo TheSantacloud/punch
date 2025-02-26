@@ -139,11 +139,7 @@ func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 	for i := range row {
 		switch i {
 		case idColumnIndex:
-			if session.ID == nil {
-				row[idColumnIndex] = ""
-			} else {
-				row[idColumnIndex] = strconv.FormatUint(uint64(*session.ID), 10)
-			}
+			row[idColumnIndex] = strconv.FormatUint(uint64(session.ID), 10)
 		case clientColumnIndex:
 			row[clientColumnIndex] = session.Client.Name
 		case dateColumnIndex:
@@ -151,13 +147,13 @@ func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 		case startTimeColumnIndex:
 			row[startTimeColumnIndex] = session.Start.Format("15:04:05")
 		case endTimeColumnIndex:
-			if session.End == nil {
+			if !session.Finished() {
 				row[endTimeColumnIndex] = ""
 			} else {
 				row[endTimeColumnIndex] = session.End.Format("15:04:05")
 			}
 		case totalTimeColumnIndex:
-			if session.End == nil {
+			if !session.Finished() {
 				row[totalTimeColumnIndex] = ""
 			} else {
 				row[totalTimeColumnIndex] = session.Duration()
@@ -176,14 +172,13 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 		return nil, fmt.Errorf("Invalid row")
 	}
 
-	var id *uint32
+	var id uint32
 	if row[idColumnIndex] != "" {
-		id = new(uint32)
 		value, err := strconv.ParseUint(row[idColumnIndex].(string), 10, 32)
 		if err != nil {
 			return nil, err
 		}
-		*id = uint32(value)
+		id = uint32(value)
 	}
 
 	var startTime time.Time
@@ -196,18 +191,18 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 		}
 	}
 
-	var endTime *time.Time
+	var endTime time.Time
 	if len(row) > 4 && row[endTimeColumnIndex] != "" {
 		endTimestamp := row[endTimeColumnIndex].(string) + " " + row[dateColumnIndex].(string)
 		parsedTime, err := time.ParseInLocation("15:04:05 02/01/2006", endTimestamp, time.Local)
 		if err != nil {
 			return nil, err
 		}
-		endTime = &parsedTime
+		endTime = parsedTime
 	}
 
-	if endTime != nil && endTime.Before(startTime) {
-		*endTime = endTime.AddDate(0, 0, 1)
+	if endTime != models.NULL_TIME && endTime.Before(startTime) {
+		endTime = endTime.AddDate(0, 0, 1)
 	}
 
 	var note string
@@ -220,7 +215,7 @@ func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
 	session := models.Session{
 		ID:     id,
 		Client: models.Client{Name: row[clientColumnIndex].(string)},
-		Start:  &startTime,
+		Start:  startTime,
 		End:    endTime,
 		Note:   note,
 	}

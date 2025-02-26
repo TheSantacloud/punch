@@ -15,10 +15,10 @@ var (
 )
 
 type RepoSession struct {
-	ID         *uint32 `gorm:"primaryKey;autoIncrement"`
-	ClientName string  `gorm:"foreignKey:Name"`
-	Start      *time.Time
-	End        *time.Time
+	ID         uint32 `gorm:"primaryKey;autoIncrement"`
+	ClientName string `gorm:"foreignKey:Name"`
+	Start      time.Time
+	End        time.Time
 	Note       string
 	Client     RepoClient `gorm:"foreignKey:ClientName;references:Name"`
 }
@@ -34,14 +34,10 @@ func NewGORMSessionRepository(db *gorm.DB) *GORMSessionRepository {
 func (repo *GORMSessionRepository) Insert(session *models.Session, dryRun bool) error {
 	repoSession := ToRepoSession(*session)
 
-	if session.ID != nil {
-		sessionByID, err := repo.GetSessionByID(*session.ID)
-		if err == nil {
-			if session.ID != nil &&
-				sessionByID.ID != nil &&
-				sessionByID.Conflicts(*session) {
-				return InfoConflictError
-			}
+	sessionByID, err := repo.GetSessionByID(session.ID)
+	if err == nil {
+		if sessionByID.Conflicts(*session) {
+			return InfoConflictError
 		}
 	}
 
@@ -50,7 +46,7 @@ func (repo *GORMSessionRepository) Insert(session *models.Session, dryRun bool) 
 		repoSession.Start,
 		repoSession.ClientName).First(&existingByDetails)
 
-	if detailResult.Error == nil && (session.ID == nil || existingByDetails.ID != session.ID) {
+	if detailResult.Error == nil {
 		return ConflictingIdsError
 	}
 
@@ -73,15 +69,13 @@ func (repo *GORMSessionRepository) Upsert(session *models.Session, dryRun bool) 
 		return repo.db.Session(&gorm.Session{DryRun: true}).Save(&repoSession).Error
 	}
 
-	if session.ID == nil {
-		var existingByDetails RepoSession
-		detailResult := repo.db.Where("start = ? AND client_name = ?",
-			repoSession.Start,
-			repoSession.ClientName).First(&existingByDetails)
+	var existingByDetails RepoSession
+	detailResult := repo.db.Where("start = ? AND client_name = ?",
+		repoSession.Start,
+		repoSession.ClientName).First(&existingByDetails)
 
-		if detailResult.Error != nil {
-			session.ID = existingByDetails.ID
-		}
+	if detailResult.Error != nil {
+		session.ID = existingByDetails.ID
 	}
 
 	return repo.db.Save(&repoSession).Error
@@ -276,14 +270,14 @@ func ToRepoSession(session models.Session) RepoSession {
 
 	startTime := session.Start.Truncate(time.Second)
 	endTime := session.End
-	if endTime != nil {
-		*endTime = endTime.Truncate(time.Second)
+	if session.Finished() {
+		endTime = endTime.Truncate(time.Second)
 	}
 
 	return RepoSession{
 		ID:         session.ID,
 		ClientName: clientName,
-		Start:      &startTime,
+		Start:      startTime,
 		End:        endTime,
 		Note:       session.Note,
 		Client:     *ToRepoClient(session.Client),
@@ -292,15 +286,14 @@ func ToRepoSession(session models.Session) RepoSession {
 
 func ToDomainSession(repoSession RepoSession) models.Session {
 	startTime := repoSession.Start.In(time.Local)
-	var endTime *time.Time
-	if repoSession.End != nil {
-		endTime = new(time.Time)
-		*endTime = repoSession.End.In(time.Local)
+	var endTime time.Time
+	if repoSession.End != models.NULL_TIME {
+		endTime = repoSession.End.In(time.Local)
 	}
 	return models.Session{
 		ID:     repoSession.ID,
 		Client: ToDomainClient(repoSession.Client),
-		Start:  &startTime,
+		Start:  startTime,
 		End:    endTime,
 		Note:   repoSession.Note,
 	}

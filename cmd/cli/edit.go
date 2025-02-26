@@ -92,7 +92,7 @@ var editSessionCmd = &cobra.Command{
 		sessionsUpdatedCount := 0
 		for _, session := range editedSessions {
 			for _, previousSession := range sessions {
-				if *session.ID == *previousSession.ID && !previousSession.Equals(session) {
+				if session.ID == previousSession.ID && !previousSession.Equals(session) {
 					sessionsUpdatedCount++
 					err = SessionRepository.Update(&session, false)
 					if err != nil {

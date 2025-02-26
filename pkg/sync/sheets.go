@@ -64,14 +64,11 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session, approvedDiffs *[]mod
 		if record == nil {
 			sessionsToAdd = append(sessionsToAdd, session)
 		} else {
-			if record.Session.ID == nil {
-				record.Session = session
-				recordsToUpdate = append(recordsToUpdate, record)
-			} else if record.Session.Conflicts(session) {
+			if record.Session.Conflicts(session) {
 				approved := false
 				for _, diff := range *approvedDiffs {
-					fmt.Printf("session.id: %d | diff.id: %d\n", *session.ID, *diff.ID)
-					if *diff.ID == *session.ID {
+					fmt.Printf("session.id: %d | diff.id: %d\n", session.ID, diff.ID)
+					if diff.ID == session.ID {
 						record.Session = session
 						recordsToUpdate = append(recordsToUpdate, record)
 						approved = true
@@ -79,10 +76,10 @@ func (s *SheetsSyncSource) Push(sessions *[]models.Session, approvedDiffs *[]mod
 					}
 				}
 				if !approved {
-					fmt.Printf("Conflict (ID: %v) between local and remote sessions\n", *session.ID)
+					fmt.Printf("Conflict (ID: %v) between local and remote sessions\n", session.ID)
 					conflicts = append(conflicts, session)
 				}
-			} else if *record.Session.ID != *session.ID {
+			} else if record.Session.ID != session.ID {
 				record.Session = session
 				recordsToUpdate = append(recordsToUpdate, record)
 			} else if record.Session.Equals(session) {
@@ -126,7 +123,7 @@ func mapSessionsToRecords(
 	for _, session := range *sessions {
 		mappedSessions[session] = nil
 		for _, record := range *records {
-			if (record.Session.ID != nil && record.Session.ID == session.ID) ||
+			if (record.Session.ID == session.ID) ||
 				record.Session.Similar(session) {
 				mappedSessions[session] = &record
 				break

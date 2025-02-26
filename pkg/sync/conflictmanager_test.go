@@ -8,22 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func timePtr(t time.Time) *time.Time {
-	return &t
-}
-
-func uint32Ptr(i uint32) *uint32 {
-	return &i
-}
-
 func TestConflictManager_GetConflicts(t *testing.T) {
 	localSessions := []models.Session{
-		{Start: timePtr(time.Now().Add(-2 * time.Hour))},
-		{Start: timePtr(time.Now())},
+		{Start: time.Now().Add(-2 * time.Hour)},
+		{Start: time.Now()},
 	}
 	remoteSessions := []models.Session{
-		{Start: timePtr(time.Now().Add(-1 * time.Hour))},
-		{Start: timePtr(time.Now().Add(-3 * time.Hour))},
+		{Start: time.Now().Add(-1 * time.Hour)},
+		{Start: time.Now().Add(-3 * time.Hour)},
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
@@ -33,18 +25,18 @@ func TestConflictManager_GetConflicts(t *testing.T) {
 
 func TestConflictManager_DetectDeletedSessions(t *testing.T) {
 	existingSessions := &[]models.Session{
-		{ID: uint32Ptr(1)},
-		{ID: uint32Ptr(2)},
-		{ID: uint32Ptr(3)},
+		{ID: 1},
+		{ID: 2},
+		{ID: 3},
 	}
 	editedSessions := &[]models.Session{
-		{ID: uint32Ptr(1)},
-		{ID: uint32Ptr(3)},
+		{ID: 1},
+		{ID: 3},
 	}
 
 	deletedSessions := DetectDeletedSessions(existingSessions, editedSessions)
 	assert.Len(t, deletedSessions, 1)
-	assert.Equal(t, uint32(2), *deletedSessions[0].ID)
+	assert.Equal(t, uint32(2), deletedSessions[0].ID)
 }
 
 func TestConflictManager_GetConflicts_EmptySessions(t *testing.T) {
@@ -59,7 +51,7 @@ func TestConflictManager_GetConflicts_EmptySessions(t *testing.T) {
 
 func TestConflictManager_GetConflicts_IdenticalSessions(t *testing.T) {
 	timeNow := time.Now()
-	sessions := []models.Session{{Start: &timeNow}}
+	sessions := []models.Session{{Start: timeNow}}
 
 	buf, err := GetConflicts(sessions, sessions)
 	assert.NoError(t, err)
@@ -69,8 +61,8 @@ func TestConflictManager_GetConflicts_IdenticalSessions(t *testing.T) {
 
 func TestConflictManager_DetectDeletedSessions_NoDeletions(t *testing.T) {
 	sessions := &[]models.Session{
-		{ID: uint32Ptr(1)},
-		{ID: uint32Ptr(2)},
+		{ID: 1},
+		{ID: 2},
 	}
 
 	deletedSessions := DetectDeletedSessions(sessions, sessions)
@@ -79,8 +71,8 @@ func TestConflictManager_DetectDeletedSessions_NoDeletions(t *testing.T) {
 
 func TestConflictManager_DetectDeletedSessions_AllDeletions(t *testing.T) {
 	existingSessions := &[]models.Session{
-		{ID: uint32Ptr(1)},
-		{ID: uint32Ptr(2)},
+		{ID: 1},
+		{ID: 2},
 	}
 	editedSessions := &[]models.Session{}
 
@@ -90,10 +82,10 @@ func TestConflictManager_DetectDeletedSessions_AllDeletions(t *testing.T) {
 
 func TestConflictManager_GetConflicts_NonOverlapping(t *testing.T) {
 	localSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(time.Now().Add(-2 * time.Hour)), End: timePtr(time.Now().Add(-1 * time.Hour))},
+		{ID: 1, Start: time.Now().Add(-2 * time.Hour), End: time.Now().Add(-1 * time.Hour)},
 	}
 	remoteSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(time.Now().Add(-4 * time.Hour)), End: timePtr(time.Now().Add(-3 * time.Hour))},
+		{ID: 1, Start: time.Now().Add(-4 * time.Hour), End: time.Now().Add(-3 * time.Hour)},
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
@@ -104,28 +96,28 @@ func TestConflictManager_GetConflicts_NonOverlapping(t *testing.T) {
 
 func TestConflictManager_DetectDeletedSessions_MixedDeletions(t *testing.T) {
 	existingSessions := &[]models.Session{
-		{ID: uint32Ptr(1)},
-		{ID: uint32Ptr(2)},
-		{ID: uint32Ptr(3)},
+		{ID: 1},
+		{ID: 2},
+		{ID: 3},
 	}
 	editedSessions := &[]models.Session{
-		{ID: uint32Ptr(1)},
-		{ID: uint32Ptr(3)},
-		{ID: uint32Ptr(4)}, // New session added
+		{ID: 1},
+		{ID: 3},
+		{ID: 4}, // New session added
 	}
 
 	deletedSessions := DetectDeletedSessions(existingSessions, editedSessions)
 	assert.Len(t, deletedSessions, 1, "One session should be detected as deleted")
-	assert.Equal(t, uint32(2), *deletedSessions[0].ID)
+	assert.Equal(t, uint32(2), deletedSessions[0].ID)
 }
 
 func TestConflictManager_GetConflicts_SameIDDifferentEndShowsMismatch(t *testing.T) {
 	now := time.Now()
 	localSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now), End: timePtr(now.Add(1 * time.Hour))},
+		{ID: 1, Start: now, End: now.Add(1 * time.Hour)},
 	}
 	remoteSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now), End: timePtr(now.Add(2 * time.Hour))},
+		{ID: 1, Start: now, End: now.Add(2 * time.Hour)},
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
@@ -137,10 +129,10 @@ func TestConflictManager_GetConflicts_SameIDDifferentEndShowsMismatch(t *testing
 func TestConflictManager_GetConflicts_SameIDDifferentStartShowsMismatch(t *testing.T) {
 	now := time.Now()
 	localSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now), End: timePtr(now.Add(1 * time.Hour))},
+		{ID: 1, Start: now, End: now.Add(1 * time.Hour)},
 	}
 	remoteSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now.Add(-1 * time.Hour)), End: timePtr(now)},
+		{ID: 1, Start: now.Add(-1 * time.Hour), End: now},
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)
@@ -152,10 +144,10 @@ func TestConflictManager_GetConflicts_SameIDDifferentStartShowsMismatch(t *testi
 func TestConflictManager_GetConflicts_SameIDDiffererentCompanyMismatch(t *testing.T) {
 	now := time.Now()
 	localSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now), Client: models.Client{Name: "CompanyA"}},
+		{ID: 1, Start: now, Client: models.Client{Name: "CompanyA"}},
 	}
 	remoteSessions := []models.Session{
-		{ID: uint32Ptr(1), Start: timePtr(now), Client: models.Client{Name: "CompanyB"}},
+		{ID: 1, Start: now, Client: models.Client{Name: "CompanyB"}},
 	}
 
 	buf, err := GetConflicts(localSessions, remoteSessions)

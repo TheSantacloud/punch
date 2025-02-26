@@ -43,8 +43,8 @@ func GetSessionsWithTimeframe(timeframe ReportTimeframe) []models.Session {
 		if currentClientName != "" && session.Client.Name != currentClientName {
 			continue
 		}
-		if isWithinTimeframe(*session.Start, startDate, endDate) &&
-			(session.End == nil || isWithinTimeframe(*session.End, startDate, endDate)) {
+		if isWithinTimeframe(session.Start, startDate, endDate) &&
+			(!session.Finished() || isWithinTimeframe(session.End, startDate, endDate)) {
 			slice = append(slice, session)
 		}
 	}
@@ -71,8 +71,8 @@ func GetRelativeSessionsFromArgs(args []string, clientName string) []models.Sess
 		if currentClientName != "" && session.Client.Name != currentClientName {
 			continue
 		}
-		if isWithinTimeframe(*session.Start, startDate, endDate) &&
-			(isWithinTimeframe(*session.End, startDate, endDate) || session.End == nil) {
+		if isWithinTimeframe(session.Start, startDate, endDate) &&
+			(isWithinTimeframe(session.End, startDate, endDate) || !session.Finished()) {
 			slice = append(slice, session)
 		}
 	}
@@ -110,9 +110,9 @@ func SortSessions(slice *[]models.Session, descending bool) {
 		prevSession := (*slice)[i]
 		nextSession := (*slice)[j]
 		if descending {
-			return prevSession.Start.After(*nextSession.Start)
+			return prevSession.Start.After(nextSession.Start)
 		} else {
-			return prevSession.Start.Before(*nextSession.Start)
+			return prevSession.Start.Before(nextSession.Start)
 		}
 	})
 }

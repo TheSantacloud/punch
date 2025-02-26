@@ -80,7 +80,7 @@ func printBOD(_ *cobra.Command, session *models.Session) {
 
 func printEOD(cmd *cobra.Command, session *models.Session) error {
 	earnings, err := session.Earnings()
-	duration := session.End.Sub(*session.Start)
+	duration := session.End.Sub(session.Start)
 	if err != nil {
 		return err
 	}

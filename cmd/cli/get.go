@@ -171,10 +171,10 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 
 		data := clientData[client]
 		sessionEnd := time.Now()
-		if session.End != nil {
-			sessionEnd = *session.End
+		if session.Finished() {
+			sessionEnd = session.End
 		}
-		duration := sessionEnd.Sub(*session.Start)
+		duration := sessionEnd.Sub(session.Start)
 		data.totalTime += duration.Truncate(time.Second)
 		currencyData[currency] = struct {
 			totalTime   time.Duration
@@ -195,7 +195,7 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 			}
 		}
 		if session.Start.After(data.lastDate) {
-			data.lastDate = *session.Start
+			data.lastDate = session.Start
 		}
 		clientData[client] = data
 	}
@@ -232,14 +232,11 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 		}
 	}
 	for _, session := range *slice {
-		id := "N/A"
-		if session.ID != nil {
-			id = fmt.Sprintf("%d", *session.ID)
-		}
+		id := fmt.Sprintf("%d", session.ID)
 
 		earnings, _ := session.Earnings()
 		endTime := "N/A"
-		if session.End != nil {
+		if session.Finished() {
 			endTime = session.End.Format("15:04:05")
 		}
 

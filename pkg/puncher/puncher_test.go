@@ -57,7 +57,7 @@ func TestPuncher_ToggleCheckInOut_RunningSessionFinalizesIt(t *testing.T) {
 	startTime := time.Now()
 	runningSession := models.Session{
 		Client: client,
-		Start:  &startTime,
+		Start:  startTime,
 	}
 
 	mockRepo.EXPECT().
@@ -94,8 +94,8 @@ func TestPuncher_ToggleCheckInOut_AlreadyFinishedSessionCreatesANewOne(t *testin
 	endTime := time.Now()
 	previousSession := models.Session{
 		Client: client,
-		Start:  &startTime,
-		End:    &endTime,
+		Start:  startTime,
+		End:    endTime,
 	}
 
 	mockRepo.EXPECT().
@@ -124,7 +124,7 @@ func TestPuncher_ToggleCheckInOut_AlreadyFinishedSessionCreatesANewOne(t *testin
 	assert.NotNil(t, session.Start, "Session start time should not be nil")
 	assert.Nil(t, session.End, "Session end time should be nil")
 	assert.Equal(t, client.Name, session.Client.Name, "Client name should match")
-	assert.Less(t, *previousSession.Start, *session.Start, "Previous session start time is not less than new session start time")
+	assert.Less(t, previousSession.Start, session.Start, "Previous session start time is not less than new session start time")
 }
 
 func TestPuncher_StartSession_NoPreviousSession(t *testing.T) {
@@ -151,7 +151,7 @@ func TestPuncher_StartSession_NoPreviousSession(t *testing.T) {
 	assert.NoError(t, err, "StartSession should not return an error")
 	assert.NotNil(t, session, "Session should not be nil")
 	assert.Equal(t, client.Name, session.Client.Name, "Client name should match")
-	assert.Equal(t, now, *session.Start, "Session start time should match")
+	assert.Equal(t, now, session.Start, "Session start time should match")
 }
 
 func TestPuncher_StartSession_PreviousSessionNotEndedYet(t *testing.T) {
@@ -166,7 +166,7 @@ func TestPuncher_StartSession_PreviousSessionNotEndedYet(t *testing.T) {
 	startTime := now.Add(-time.Hour)
 	previousSession := models.Session{
 		Client: client,
-		Start:  &startTime,
+		Start:  startTime,
 	}
 
 	mockRepo.EXPECT().
@@ -194,8 +194,8 @@ func TestPuncher_StartSession_PreviousSessionInTimespaceAlreadyEndedStartsANewOn
 	endTime := now.Add(-time.Minute)
 	previousSession := models.Session{
 		Client: client,
-		Start:  &startTime,
-		End:    &endTime,
+		Start:  startTime,
+		End:    endTime,
 	}
 
 	mockRepo.EXPECT().
@@ -213,7 +213,7 @@ func TestPuncher_StartSession_PreviousSessionInTimespaceAlreadyEndedStartsANewOn
 	assert.NoError(t, err, "StartSession should not return an error")
 	assert.NotNil(t, session, "Session should not be nil")
 	assert.Equal(t, client.Name, session.Client.Name, "Client name should match")
-	assert.NotEqual(t, *previousSession.Start, *session.Start, "Previous session start time should not match new session start time")
+	assert.NotEqual(t, previousSession.Start, session.Start, "Previous session start time should not match new session start time")
 }
 
 func TestPuncher_EndSession_FinalizedGoodSession(t *testing.T) {
@@ -228,7 +228,7 @@ func TestPuncher_EndSession_FinalizedGoodSession(t *testing.T) {
 	startTime := now.Add(-time.Hour)
 	previousSession := models.Session{
 		Client: client,
-		Start:  &startTime,
+		Start:  startTime,
 	}
 
 	mockRepo.EXPECT().
@@ -241,8 +241,8 @@ func TestPuncher_EndSession_FinalizedGoodSession(t *testing.T) {
 	assert.NoError(t, err, "StartSession should not return an error")
 	assert.NotNil(t, session, "Session should not be nil")
 	assert.Equal(t, client.Name, session.Client.Name, "Client name should match")
-	assert.Equal(t, *previousSession.Start, *session.Start, "Session start time should match previous session start time")
-	assert.Less(t, *session.Start, *session.End, "Session start time should be less than session end time")
+	assert.Equal(t, previousSession.Start, session.Start, "Session start time should match previous session start time")
+	assert.Less(t, session.Start, session.End, "Session start time should be less than session end time")
 }
 
 func TestPuncher_EndSession_GettingAnAlreadyEndedSessionDoesNothing(t *testing.T) {
@@ -258,8 +258,8 @@ func TestPuncher_EndSession_GettingAnAlreadyEndedSessionDoesNothing(t *testing.T
 	endTime := now.Add(-time.Minute)
 	previousSession := models.Session{
 		Client: client,
-		Start:  &startTime,
-		End:    &endTime,
+		Start:  startTime,
+		End:    endTime,
 	}
 
 	mockRepo.EXPECT().
@@ -291,7 +291,7 @@ func TestPuncher_EndSession_SessionStartTimeIsAfterEndTimeDoesNothing(t *testing
 	startTime := time.Now().Add(-time.Minute)
 	previousSession := models.Session{
 		Client: client,
-		Start:  &startTime,
+		Start:  startTime,
 	}
 
 	mockRepo.EXPECT().

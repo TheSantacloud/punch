@@ -31,7 +31,7 @@ func (p *Puncher) ToggleCheckInOut(client *models.Client, note string) (*models.
 	session, err := p.repo.GetLatestSession()
 	switch err {
 	case nil:
-		if session.End != nil {
+		if session.Finished() {
 			return p.StartSession(*client, today, note)
 		} else {
 			return p.EndSession(*session, today, note)
@@ -45,12 +45,12 @@ func (p *Puncher) ToggleCheckInOut(client *models.Client, note string) (*models.
 
 func (p *Puncher) StartSession(client models.Client, timestamp time.Time, note string) (*models.Session, error) {
 	fetchedSession, err := p.repo.GetLatestSessionOnSpecificDate(timestamp, client)
-	if err != repositories.ErrSessionNotFound && fetchedSession.End == nil {
+	if err != repositories.ErrSessionNotFound && !fetchedSession.Finished() {
 		return nil, ErrSessionAlreadyStarted
 	}
 	session := models.Session{
 		Client: client,
-		Start:  &timestamp,
+		Start:  timestamp,
 		Note:   note,
 	}
 	err = p.repo.Insert(&session, false)
@@ -61,7 +61,7 @@ func (p *Puncher) StartSession(client models.Client, timestamp time.Time, note s
 }
 
 func (p *Puncher) EndSession(session models.Session, timestamp time.Time, note string) (*models.Session, error) {
-	if session.End != nil {
+	if session.Finished() {
 		return nil, ErrSessionAlreadyEnded
 	}
 
@@ -69,7 +69,7 @@ func (p *Puncher) EndSession(session models.Session, timestamp time.Time, note s
 		return nil, ErrInvalidSession
 	}
 
-	session.End = &timestamp
+	session.End = timestamp
 
 	lastyear := time.Date(time.Now().Year()-1, 1, 1, 0, 0, 0, 0, time.UTC).Year()
 	timestampDaysSinceLastYear := int(timestamp.Sub(time.Date(lastyear, 1, 1, 0, 0, 0, 0, time.UTC)).Hours() / 24)

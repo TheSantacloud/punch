@@ -31,10 +31,10 @@ func createSampleSession() models.Session {
 	id := uint32(1)
 
 	return models.Session{
-		ID:     &id,
+		ID:     id,
 		Client: client,
-		Start:  &now,
-		End:    &later,
+		Start:  now,
+		End:    later,
 		Note:   "Test Note",
 	}
 }
@@ -56,27 +56,6 @@ func TestCli_GetSession_NoPreexistingSessionsReturnsNothing(t *testing.T) {
 	assert.ErrorIs(t, err, NoAvailableDataError)
 }
 
-// func TestCli_GetSession_PreexistingSessionReturnsTheCurrentlyOpenOne(t *testing.T) {
-// 	mockCtrl := gomock.NewController(t)
-// 	defer mockCtrl.Finish()
-// 	SessionRepository = repositories.NewMockSessionRepository(mockCtrl)
-//
-// 	unclosedSession := createSampleSession()
-// 	unclosedSession.End = nil
-//
-// 	returnValue := []models.Session{unclosedSession}
-//
-// 	SessionRepository.(*repositories.MockSessionRepository).EXPECT().
-// 		GetAllSessionsBetweenDates(gomock.Any(), gomock.Any()).
-// 		Return(&returnValue, nil).
-// 		Times(1)
-//
-// 	args := []string{"get", "session"}
-// 	output, err := executeCommand(t, args)
-// 	assert.NoError(t, err)
-// 	assert.Contains(t, output, unclosedSession.Client.Name)
-// }
-
 func TestCli_GetSession_GetSessionWithoutASessionForThatDayReturnsNothing(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -85,8 +64,8 @@ func TestCli_GetSession_GetSessionWithoutASessionForThatDayReturnsNothing(t *tes
 	unclosedSession := createSampleSession()
 	newStart := unclosedSession.Start.AddDate(0, 0, -1)
 	newEnd := unclosedSession.End.AddDate(0, 0, -1)
-	unclosedSession.Start = &newStart
-	unclosedSession.End = &newEnd
+	unclosedSession.Start = newStart
+	unclosedSession.End = newEnd
 
 	returnValue := []models.Session{
 		unclosedSession,
