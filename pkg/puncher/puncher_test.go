@@ -42,7 +42,7 @@ func TestPuncher_ToggleCheckInOut_NoRunningSessionStartsOne(t *testing.T) {
 	assert.NoError(t, err, "ToggleCheckInOut should not return an error")
 	assert.NotNil(t, session, "Session should not be nil")
 	assert.NotNil(t, session.Start, "Session start time should not be nil")
-	assert.Nil(t, session.End, "Session end time should be nil")
+	assert.False(t, session.Finished(), "Session should not be finished")
 	assert.Equal(t, client.Name, session.Client.Name, "Client name should match")
 }
 
@@ -122,7 +122,7 @@ func TestPuncher_ToggleCheckInOut_AlreadyFinishedSessionCreatesANewOne(t *testin
 	assert.NoError(t, err, "ToggleCheckInOut should not return an error")
 	assert.NotNil(t, session, "Session should not be nil")
 	assert.NotNil(t, session.Start, "Session start time should not be nil")
-	assert.Nil(t, session.End, "Session end time should be nil")
+	assert.False(t, session.Finished(), "Session should not be finished")
 	assert.Equal(t, client.Name, session.Client.Name, "Client name should match")
 	assert.Less(t, previousSession.Start, session.Start, "Previous session start time is not less than new session start time")
 }
