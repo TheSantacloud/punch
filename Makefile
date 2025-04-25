@@ -10,6 +10,10 @@ test:
 lint:
 	golangci-lint run
 
+update:
+	go get -u ./...
+	go mod tidy
+
 .PHONY: all
 
 .DEFAULT_GOAL := all
