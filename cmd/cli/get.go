@@ -18,7 +18,7 @@ var (
 	summary         bool
 	hideHeaders     bool
 
-	NoAvailableDataError = errors.New("No available data")
+	ErrNoAvailableData = errors.New("no available data")
 )
 
 var getCmd = &cobra.Command{
@@ -35,13 +35,13 @@ var getClientCmd = &cobra.Command{
 		if len(args) == 1 {
 			client, err := ClientRepository.GetByName(args[0])
 			if err != nil {
-				return fmt.Errorf("Unable to get client: %v", err)
+				return fmt.Errorf("unable to get client: %v", err)
 			}
 			rootCmd.Println(client.String())
 		} else {
 			clients, err := ClientRepository.GetAll()
 			if err != nil {
-				return fmt.Errorf("Unable to get clients: %v", err)
+				return fmt.Errorf("unable to get clients: %v", err)
 			}
 			for _, client := range clients {
 				rootCmd.Println(client.String())
@@ -99,12 +99,12 @@ punch get session 01-01`,
 
 func generateView(slice *[]models.Session) (*string, error) {
 	if len(*slice) == 0 {
-		return nil, NoAvailableDataError
+		return nil, ErrNoAvailableData
 	}
 	var (
 		buffer  *bytes.Buffer
 		err     error
-		content string = ""
+		content = ""
 	)
 
 	switch output {
@@ -136,7 +136,10 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 	buffer := new(bytes.Buffer)
 	w := tabwriter.NewWriter(buffer, 0, 0, 1, ' ', tabwriter.TabIndent)
 	if !hideHeaders {
-		fmt.Fprintln(w, "DATE\tCLIENT\tTIME\tAMOUNT\tCURRENCY")
+		_, err := fmt.Fprintln(w, "DATE\tCLIENT\tTIME\tAMOUNT\tCURRENCY")
+		if err != nil {
+			return "", err
+		}
 	}
 
 	clientData := make(map[string]struct {
@@ -201,23 +204,32 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 	}
 
 	for client, data := range clientData {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%s\n",
+		_, err := fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%s\n",
 			data.lastDate.Format("2006-01-02"),
 			client,
 			data.totalTime,
 			data.totalAmount,
 			data.currency)
+		if err != nil {
+			return "", err
+		}
 	}
 	if len(clientData) > 1 {
 		for currency, data := range currencyData {
-			fmt.Fprintf(w, "-\t<all>\t%s\t%.2f\t%s\n",
+			_, err := fmt.Fprintf(w, "-\t<all>\t%s\t%.2f\t%s\n",
 				data.totalTime,
 				data.totalAmount,
 				currency)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
-	w.Flush()
+	err := w.Flush()
+	if err != nil {
+		return "", err
+	}
 	return buffer.String(), nil
 }
 
@@ -226,9 +238,15 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 	w := tabwriter.NewWriter(buffer, 0, 0, 1, ' ', tabwriter.TabIndent)
 	if !hideHeaders {
 		if verbose {
-			fmt.Fprintln(w, "ID\tDATE\tCLIENT\tSTART\tEND\tDURATION\tAMOUNT\tCURRENCY\tNOTE")
+			_, err := fmt.Fprintln(w, "ID\tDATE\tCLIENT\tSTART\tEND\tDURATION\tAMOUNT\tCURRENCY\tNOTE")
+			if err != nil {
+				return "", err
+			}
 		} else {
-			fmt.Fprintln(w, "DATE\tCLIENT\tDURATION\tAMOUNT\tCURRENCY")
+			_, err := fmt.Fprintln(w, "DATE\tCLIENT\tDURATION\tAMOUNT\tCURRENCY")
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 	for _, session := range *slice {
@@ -241,7 +259,7 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 		}
 
 		if verbose {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%.2f\t%s\t%s\n",
+			_, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%.2f\t%s\t%s\n",
 				id,
 				session.Start.Format("2006-01-02"),
 				session.Client.Name,
@@ -252,17 +270,26 @@ func generateFullGetView(slice *[]models.Session) (string, error) {
 				session.Client.Currency,
 				session.Note,
 			)
+			if err != nil {
+				return "", err
+			}
 		} else {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%s\n",
+			_, err := fmt.Fprintf(w, "%s\t%s\t%s\t%.2f\t%s\n",
 				session.Start.Format("2006-01-02"),
 				session.Client.Name,
 				session.Duration(),
 				earnings,
 				session.Client.Currency,
 			)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
-	w.Flush()
+	err := w.Flush()
+	if err != nil {
+		return "", err
+	}
 	return buffer.String(), nil
 }
 

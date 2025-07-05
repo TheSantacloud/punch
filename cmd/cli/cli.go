@@ -102,7 +102,7 @@ func Execute(cfg *config.Config) error {
 
 	db, err := database.NewDatabase(cfg.Database.Engine, cfg.Database.Path)
 	if err != nil {
-		return fmt.Errorf("Unable to connect to models. %v", err)
+		return fmt.Errorf("unable to connect to models. %v", err)
 	}
 
 	SessionRepository = repositories.NewGORMSessionRepository(db)
@@ -112,7 +112,7 @@ func Execute(cfg *config.Config) error {
 	if Config.Settings.DefaultRemote != "" {
 		remote, ok := Config.Remotes[Config.Settings.DefaultRemote]
 		if !ok {
-			return errors.New("Remote not found")
+			return errors.New("remote not found")
 		}
 		Source = new(sync.SyncSource)
 		*Source, err = sync.NewSource(remote, SessionRepository)

@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	ErrSessionNotFound  = errors.New("Session record not found")
-	ConflictingIdsError = errors.New("Session already exists with a different ID")
-	InfoConflictError   = errors.New("Session exists with different info")
+	ErrSessionNotFound = errors.New("session record not found")
+	ErrConflictingIds  = errors.New("session already exists with a different ID")
+	ErrInfoConflict    = errors.New("session exists with different info")
 )
 
 type RepoSession struct {
@@ -37,7 +37,7 @@ func (repo *GORMSessionRepository) Insert(session *models.Session, dryRun bool) 
 	sessionByID, err := repo.GetSessionByID(session.ID)
 	if err == nil {
 		if sessionByID.Conflicts(*session) {
-			return InfoConflictError
+			return ErrInfoConflict
 		}
 	}
 
@@ -47,13 +47,13 @@ func (repo *GORMSessionRepository) Insert(session *models.Session, dryRun bool) 
 		repoSession.ClientName).First(&existingByDetails)
 
 	if detailResult.Error == nil {
-		return ConflictingIdsError
+		return ErrConflictingIds
 	}
 
 	if detailResult.Error == nil {
 		sessionByDetails := ToDomainSession(existingByDetails)
 		if sessionByDetails.Conflicts(*session) {
-			return InfoConflictError
+			return ErrInfoConflict
 		}
 	}
 

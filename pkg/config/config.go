@@ -126,7 +126,7 @@ func loadConfig() (*Config, error) {
 	var intermediateConfig struct {
 		Settings Settings
 		Database Database
-		Remotes  map[string]interface{}
+		Remotes  map[string]any
 	}
 	if err := viper.Unmarshal(&intermediateConfig); err != nil {
 		return nil, err
@@ -188,11 +188,11 @@ func validateDefaultRemoteExistsWithinRemotes(fl validator.FieldLevel) bool {
 	return false
 }
 
-func unmarshalRemotes(remoteMap map[string]interface{}, conf *Config) error {
+func unmarshalRemotes(remoteMap map[string]any, conf *Config) error {
 	conf.Remotes = make(map[string]Remote)
 
 	for key, value := range remoteMap {
-		remoteConfig := value.(map[string]interface{})
+		remoteConfig := value.(map[string]any)
 
 		remoteType, ok := remoteConfig["type"].(string)
 		if !ok {

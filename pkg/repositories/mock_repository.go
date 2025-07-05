@@ -44,7 +44,7 @@ func (m *MockSessionRepository) Delete(session *models.Session, dryRun bool) err
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockSessionRepositoryMockRecorder) Delete(session, dryRun interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) Delete(session, dryRun any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSessionRepository)(nil).Delete), session, dryRun)
 }
@@ -59,7 +59,7 @@ func (m *MockSessionRepository) GetAllSessions(client models.Client) (*[]models.
 }
 
 // GetAllSessions indicates an expected call of GetAllSessions.
-func (mr *MockSessionRepositoryMockRecorder) GetAllSessions(client interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetAllSessions(client any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSessions", reflect.TypeOf((*MockSessionRepository)(nil).GetAllSessions), client)
 }
@@ -89,7 +89,7 @@ func (m *MockSessionRepository) GetAllSessionsBetweenDates(start, end time.Time)
 }
 
 // GetAllSessionsBetweenDates indicates an expected call of GetAllSessionsBetweenDates.
-func (mr *MockSessionRepositoryMockRecorder) GetAllSessionsBetweenDates(start, end interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetAllSessionsBetweenDates(start, end any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSessionsBetweenDates", reflect.TypeOf((*MockSessionRepository)(nil).GetAllSessionsBetweenDates), start, end)
 }
@@ -104,7 +104,7 @@ func (m *MockSessionRepository) GetLastSessions(arg0 uint32, arg1 *models.Client
 }
 
 // GetLastSessions indicates an expected call of GetLastSessions.
-func (mr *MockSessionRepositoryMockRecorder) GetLastSessions(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetLastSessions(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastSessions", reflect.TypeOf((*MockSessionRepository)(nil).GetLastSessions), arg0, arg1)
 }
@@ -134,7 +134,7 @@ func (m *MockSessionRepository) GetLatestSessionOnSpecificDate(date time.Time, c
 }
 
 // GetLatestSessionOnSpecificDate indicates an expected call of GetLatestSessionOnSpecificDate.
-func (mr *MockSessionRepositoryMockRecorder) GetLatestSessionOnSpecificDate(date, client interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetLatestSessionOnSpecificDate(date, client any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestSessionOnSpecificDate", reflect.TypeOf((*MockSessionRepository)(nil).GetLatestSessionOnSpecificDate), date, client)
 }
@@ -149,7 +149,7 @@ func (m *MockSessionRepository) GetLatestSessionOnSpecificDateAllClients(date ti
 }
 
 // GetLatestSessionOnSpecificDateAllClients indicates an expected call of GetLatestSessionOnSpecificDateAllClients.
-func (mr *MockSessionRepositoryMockRecorder) GetLatestSessionOnSpecificDateAllClients(date interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetLatestSessionOnSpecificDateAllClients(date any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestSessionOnSpecificDateAllClients", reflect.TypeOf((*MockSessionRepository)(nil).GetLatestSessionOnSpecificDateAllClients), date)
 }
@@ -164,7 +164,7 @@ func (m *MockSessionRepository) GetSessionByID(id uint32) (*models.Session, erro
 }
 
 // GetSessionByID indicates an expected call of GetSessionByID.
-func (mr *MockSessionRepositoryMockRecorder) GetSessionByID(id interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) GetSessionByID(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSessionByID", reflect.TypeOf((*MockSessionRepository)(nil).GetSessionByID), id)
 }
@@ -178,7 +178,7 @@ func (m *MockSessionRepository) Insert(session *models.Session, dryRun bool) err
 }
 
 // Insert indicates an expected call of Insert.
-func (mr *MockSessionRepositoryMockRecorder) Insert(session, dryRun interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) Insert(session, dryRun any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockSessionRepository)(nil).Insert), session, dryRun)
 }
@@ -192,7 +192,7 @@ func (m *MockSessionRepository) Update(session *models.Session, dryRun bool) err
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockSessionRepositoryMockRecorder) Update(session, dryRun interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) Update(session, dryRun any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockSessionRepository)(nil).Update), session, dryRun)
 }
@@ -206,7 +206,7 @@ func (m *MockSessionRepository) Upsert(session *models.Session, dryRun bool) err
 }
 
 // Upsert indicates an expected call of Upsert.
-func (mr *MockSessionRepositoryMockRecorder) Upsert(session, dryRun interface{}) *gomock.Call {
+func (mr *MockSessionRepositoryMockRecorder) Upsert(session, dryRun any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockSessionRepository)(nil).Upsert), session, dryRun)
 }
@@ -243,7 +243,7 @@ func (m *MockClientRepository) Delete(client *models.Client) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockClientRepositoryMockRecorder) Delete(client interface{}) *gomock.Call {
+func (mr *MockClientRepositoryMockRecorder) Delete(client any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClientRepository)(nil).Delete), client)
 }
@@ -273,7 +273,7 @@ func (m *MockClientRepository) GetByName(name string) (*models.Client, error) {
 }
 
 // GetByName indicates an expected call of GetByName.
-func (mr *MockClientRepositoryMockRecorder) GetByName(name interface{}) *gomock.Call {
+func (mr *MockClientRepositoryMockRecorder) GetByName(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockClientRepository)(nil).GetByName), name)
 }
@@ -287,7 +287,7 @@ func (m *MockClientRepository) Insert(client *models.Client) error {
 }
 
 // Insert indicates an expected call of Insert.
-func (mr *MockClientRepositoryMockRecorder) Insert(client interface{}) *gomock.Call {
+func (mr *MockClientRepositoryMockRecorder) Insert(client any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockClientRepository)(nil).Insert), client)
 }
@@ -301,7 +301,7 @@ func (m *MockClientRepository) Rename(client *models.Client, newName string) err
 }
 
 // Rename indicates an expected call of Rename.
-func (mr *MockClientRepositoryMockRecorder) Rename(client, newName interface{}) *gomock.Call {
+func (mr *MockClientRepositoryMockRecorder) Rename(client, newName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rename", reflect.TypeOf((*MockClientRepository)(nil).Rename), client, newName)
 }
@@ -316,7 +316,7 @@ func (m *MockClientRepository) SafeGetByName(name string) (*models.Client, error
 }
 
 // SafeGetByName indicates an expected call of SafeGetByName.
-func (mr *MockClientRepositoryMockRecorder) SafeGetByName(name interface{}) *gomock.Call {
+func (mr *MockClientRepositoryMockRecorder) SafeGetByName(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SafeGetByName", reflect.TypeOf((*MockClientRepository)(nil).SafeGetByName), name)
 }
@@ -330,7 +330,7 @@ func (m *MockClientRepository) Update(client *models.Client) error {
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockClientRepositoryMockRecorder) Update(client interface{}) *gomock.Call {
+func (mr *MockClientRepositoryMockRecorder) Update(client any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClientRepository)(nil).Update), client)
 }

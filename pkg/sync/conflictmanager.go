@@ -2,6 +2,7 @@ package sync
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"os/exec"
 	"sort"
@@ -70,7 +71,11 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(localFile.Name())
+	defer func() {
+		if err := os.Remove(localFile.Name()); err != nil {
+			log.Printf("failed to remove temp file %q: %v", localFile.Name(), err)
+		}
+	}()
 
 	remoteFile, err := os.CreateTemp("", "punch-remote-*.yaml")
 	if err != nil {
@@ -80,7 +85,11 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(remoteFile.Name())
+	defer func() {
+		if err := os.Remove(remoteFile.Name()); err != nil {
+			log.Printf("failed to remove temp file %q: %v", remoteFile.Name(), err)
+		}
+	}()
 
 	cmd := exec.Command("diff", "-D", "HEAD", localFile.Name(), remoteFile.Name())
 
@@ -111,12 +120,12 @@ func generateDiffBuffer(localBuffer, remoteBuffer *bytes.Buffer) (*bytes.Buffer,
 
 func replaceToGitDiffStandard(diffString *string) {
 	if strings.Contains(*diffString, "ifdef") {
-		*diffString = strings.Replace(*diffString, "#ifdef HEAD", "<<<<<<< HEAD\n=======", -1)
-		*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
+		*diffString = strings.ReplaceAll(*diffString, "#ifdef HEAD", "<<<<<<< HEAD\n=======")
+		*diffString = strings.ReplaceAll(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE")
 	} else {
-		*diffString = strings.Replace(*diffString, "#ifndef HEAD", "<<<<<<< HEAD", -1)
-		*diffString = strings.Replace(*diffString, "#else /* HEAD */", "=======", -1)
-		*diffString = strings.Replace(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE", -1)
+		*diffString = strings.ReplaceAll(*diffString, "#ifndef HEAD", "<<<<<<< HEAD")
+		*diffString = strings.ReplaceAll(*diffString, "#else /* HEAD */", "=======")
+		*diffString = strings.ReplaceAll(*diffString, "#endif /* HEAD */", ">>>>>>> REMOTE")
 	}
 }
 

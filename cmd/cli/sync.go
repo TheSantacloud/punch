@@ -27,11 +27,11 @@ var syncCmd = &cobra.Command{
 		} else if len(Config.Settings.DefaultRemote) > 0 {
 			remoteString = Config.Settings.DefaultRemote
 		} else {
-			return errors.New("Must specify remote")
+			return errors.New("must specify remote")
 		}
 		remote, ok := Config.Remotes[remoteString]
 		if !ok {
-			return errors.New("Remote not found")
+			return errors.New("remote not found")
 		}
 
 		var err error

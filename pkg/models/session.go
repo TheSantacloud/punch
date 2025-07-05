@@ -39,8 +39,8 @@ func (s Session) Similar(session Session) bool {
 
 func (s Session) Equals(session Session) bool {
 	return session.ID == s.ID &&
-		s.Start == session.Start &&
-		s.End == session.End &&
+		s.Start.Equal(session.Start) &&
+		s.End.Equal(session.End) &&
 		s.Client.Name == session.Client.Name &&
 		s.Note == session.Note
 }
@@ -67,11 +67,11 @@ func (s Session) Conflicts(session Session) bool {
 }
 
 func (s Session) Finished() bool {
-	return s.End != NULL_TIME
+	return !s.End.Equal(NULL_TIME)
 }
 
 func (s Session) Earnings() (float64, error) {
-	if s.Start == NULL_TIME {
+	if s.Start.Equal(NULL_TIME) {
 		return 0, fmt.Errorf("Session not started or ended")
 	}
 	end := time.Now()
@@ -85,12 +85,12 @@ func (s Session) Earnings() (float64, error) {
 }
 
 func (s Session) Duration() string {
-	if s.Start == NULL_TIME {
+	if s.Start.Equal(NULL_TIME) {
 		return "N/A"
 	}
 
 	end := time.Now()
-	if s.End != NULL_TIME {
+	if !s.End.Equal(NULL_TIME) {
 		end = s.End
 	}
 
@@ -104,7 +104,7 @@ func (s Session) Duration() string {
 	seconds := int(delta.Seconds()) % 60
 
 	returnValue := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
-	if s.End == NULL_TIME {
+	if s.End.Equal(NULL_TIME) {
 		returnValue = "~" + returnValue
 	}
 	return returnValue

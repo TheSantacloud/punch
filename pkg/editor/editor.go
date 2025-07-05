@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 
@@ -20,7 +21,11 @@ func InteractiveEdit(buffer *bytes.Buffer, filetype string) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() {
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			log.Printf("failed to remove temp file %q: %v", tmpfile.Name(), err)
+		}
+	}()
 
 	if _, err := tmpfile.Write(buffer.Bytes()); err != nil {
 		return err
@@ -57,7 +62,7 @@ func InteractiveEdit(buffer *bytes.Buffer, filetype string) error {
 	postEditChecksumStr := hex.EncodeToString(postEditChecksum[:])
 
 	if initialChecksumStr == postEditChecksumStr {
-		return fmt.Errorf("No changes made")
+		return fmt.Errorf("no changes made")
 	}
 
 	buffer.Reset()

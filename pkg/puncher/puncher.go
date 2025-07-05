@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	ErrSessionAlreadyStarted = errors.New("Session already started")
-	ErrSessionAlreadyEnded   = errors.New("Session already ended")
-	ErrInvalidSession        = errors.New("Invalid session")
+	ErrSessionAlreadyStarted = errors.New("session already started")
+	ErrSessionAlreadyEnded   = errors.New("session already ended")
+	ErrInvalidSession        = errors.New("invalid session")
 )
 
 type Puncher struct {
@@ -55,7 +55,7 @@ func (p *Puncher) StartSession(client models.Client, timestamp time.Time, note s
 	}
 	err = p.repo.Insert(&session, false)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to insert session: %v", err)
+		return nil, fmt.Errorf("unable to insert session: %v", err)
 	}
 	return &session, nil
 }

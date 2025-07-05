@@ -53,7 +53,7 @@ func TestCli_GetSession_NoPreexistingSessionsReturnsNothing(t *testing.T) {
 
 	args := []string{"get", "session"}
 	_, err := executeCommand(t, args)
-	assert.ErrorIs(t, err, NoAvailableDataError)
+	assert.ErrorIs(t, err, ErrNoAvailableData)
 }
 
 func TestCli_GetSession_GetSessionWithoutASessionForThatDayReturnsNothing(t *testing.T) {
@@ -78,7 +78,7 @@ func TestCli_GetSession_GetSessionWithoutASessionForThatDayReturnsNothing(t *tes
 
 	args := []string{"get", "session"}
 	_, err := executeCommand(t, args)
-	assert.ErrorIs(t, err, NoAvailableDataError)
+	assert.ErrorIs(t, err, ErrNoAvailableData)
 }
 
 func TestCli_GetSession_DayFlagQueriesForDayOnly(t *testing.T) {
@@ -97,7 +97,7 @@ func TestCli_GetSession_DayFlagQueriesForDayOnly(t *testing.T) {
 
 	args := []string{"get", "session", "--day"}
 	_, err := executeCommand(t, args)
-	assert.ErrorIs(t, err, NoAvailableDataError)
+	assert.ErrorIs(t, err, ErrNoAvailableData)
 }
 
 // func TestCli_GetSession_WeekFlagQueriesForWeekOnly(t *testing.T) {

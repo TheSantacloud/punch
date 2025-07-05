@@ -2,6 +2,7 @@ package editor
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"testing"
 
@@ -46,7 +47,11 @@ func TestInteractiveEdit_ChangedChecksum(t *testing.T) {
 echo "modified content" > $1`)
 	tmpScriptFile, err := os.CreateTemp("", "test_editor_*.sh")
 	assert.NoError(t, err, "Failed to create temporary script file")
-	defer os.Remove(tmpScriptFile.Name())
+	defer func() {
+		if err := os.Remove(tmpScriptFile.Name()); err != nil {
+			log.Printf("failed to remove temp file %q: %v", tmpScriptFile.Name(), err)
+		}
+	}()
 
 	_, err = tmpScriptFile.Write(editorScript)
 	assert.NoError(t, err, "Failed to write to temporary script file")

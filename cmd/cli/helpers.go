@@ -177,9 +177,9 @@ func GetClientIfExists(name string) error {
 		return err
 	}
 	if currentClient == nil && currentClientName != defaultClient {
-		return fmt.Errorf("Client `%s` does not exist", currentClientName)
+		return fmt.Errorf("client `%s` does not exist", currentClientName)
 	} else if currentClient == nil && currentClientName == defaultClient {
-		return fmt.Errorf("Set `%s` as default client, but it doesn't exists",
+		return fmt.Errorf("set `%s` as default client, but it doesn't exists",
 			currentClientName)
 	}
 	return nil

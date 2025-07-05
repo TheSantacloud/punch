@@ -22,21 +22,21 @@ type SyncSource interface {
 }
 
 var (
-	RemoteSourceNotSupportedError = errors.New("Source not implemented")
-	InvalidRemoteConfigError      = errors.New("Invalid remote config")
-	SessionRepositoryNotSetError  = errors.New("Session repository not set")
+	ErrRemoteSourceNotSupported = errors.New("source not implemented")
+	ErrInvalidRemoteConfig      = errors.New("invalid remote config")
+	ErrSessionRepositoryNotSet  = errors.New("session repository not set")
 )
 
 func NewSource(remoteConfig config.Remote, sessionRepository repositories.SessionRepository) (SyncSource, error) {
 	if sessionRepository == nil {
-		return nil, SessionRepositoryNotSetError
+		return nil, ErrSessionRepositoryNotSet
 	}
 
 	switch remoteConfig.Type() {
 	case "spreadsheet":
 		remoteSheetConfig, ok := remoteConfig.(*config.SpreadsheetRemote)
 		if !ok {
-			return nil, InvalidRemoteConfigError
+			return nil, ErrInvalidRemoteConfig
 		}
 		client, err := sheets.NewSheet(*remoteSheetConfig)
 		if err != nil {
@@ -47,7 +47,7 @@ func NewSource(remoteConfig config.Remote, sessionRepository repositories.Sessio
 			SessionRepository: sessionRepository,
 		}, nil
 	default:
-		return nil, RemoteSourceNotSupportedError
+		return nil, ErrRemoteSourceNotSupported
 
 	}
 }

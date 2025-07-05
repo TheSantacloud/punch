@@ -132,10 +132,10 @@ func (s *Sheet) ParseSheet(records *[]Record) error {
 	return nil
 }
 
-func (s *Sheet) SessionToRow(session models.Session) []interface{} {
+func (s *Sheet) SessionToRow(session models.Session) []any {
 	maxIdx := max(clientColumnIndex, dateColumnIndex, startTimeColumnIndex,
 		endTimeColumnIndex, totalTimeColumnIndex, noteColumnIndex) + 1
-	row := make([]interface{}, maxIdx)
+	row := make([]any, maxIdx)
 	for i := range row {
 		switch i {
 		case idColumnIndex:
@@ -167,9 +167,9 @@ func (s *Sheet) SessionToRow(session models.Session) []interface{} {
 	return row
 }
 
-func (s *Sheet) SessionFromRow(row []interface{}) (*models.Session, error) {
+func (s *Sheet) SessionFromRow(row []any) (*models.Session, error) {
 	if len(row) < 4 {
-		return nil, fmt.Errorf("Invalid row")
+		return nil, fmt.Errorf("invalid row")
 	}
 
 	var id uint32
@@ -226,7 +226,7 @@ func (s *Sheet) AddRow(session models.Session) error {
 	// TODO: keep sheet sorted
 	row := s.SessionToRow(session)
 	valueRange := &sheets.ValueRange{
-		Values: [][]interface{}{row},
+		Values: [][]any{row},
 	}
 
 	_, err := s.Service.Spreadsheets.Values.Append(s.SpreadsheetId, s.SheetName, valueRange).ValueInputOption("USER_ENTERED").Do()
@@ -236,7 +236,7 @@ func (s *Sheet) AddRow(session models.Session) error {
 func (s *Sheet) UpdateRow(record Record) error {
 	row := s.SessionToRow(record.Session)
 	valueRange := &sheets.ValueRange{
-		Values: [][]interface{}{row},
+		Values: [][]any{row},
 	}
 
 	// Adding one because of the header row
@@ -245,7 +245,7 @@ func (s *Sheet) UpdateRow(record Record) error {
 	return err
 }
 
-func (s *Sheet) ParseHeaders(row []interface{}) {
+func (s *Sheet) ParseHeaders(row []any) {
 	for i, column := range row {
 		switch column {
 		case s.Columns.ID:
@@ -272,7 +272,7 @@ func (s *Sheet) readSheet() (*sheets.ValueRange, error) {
 		return nil, err
 	}
 	if len(resp.Values) == 0 {
-		return nil, fmt.Errorf("No data found")
+		return nil, fmt.Errorf("no data found")
 	}
 	return resp, nil
 }
