@@ -16,7 +16,7 @@ var (
 	output          string
 	descendingOrder bool
 	summary         bool
-	hideHeaders     bool
+	showHeaders     bool
 
 	ErrNoAvailableData = errors.New("no available data")
 )
@@ -135,7 +135,7 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 
 	buffer := new(bytes.Buffer)
 	w := tabwriter.NewWriter(buffer, 0, 0, 1, ' ', tabwriter.TabIndent)
-	if !hideHeaders {
+	if showHeaders {
 		_, err := fmt.Fprintln(w, "DATE\tCLIENT\tTIME\tAMOUNT\tCURRENCY")
 		if err != nil {
 			return "", err
@@ -236,7 +236,7 @@ func generateSummaryView(slice *[]models.Session) (string, error) {
 func generateFullGetView(slice *[]models.Session) (string, error) {
 	buffer := new(bytes.Buffer)
 	w := tabwriter.NewWriter(buffer, 0, 0, 1, ' ', tabwriter.TabIndent)
-	if !hideHeaders {
+	if showHeaders {
 		if verbose {
 			_, err := fmt.Fprintln(w, "ID\tDATE\tCLIENT\tSTART\tEND\tDURATION\tAMOUNT\tCURRENCY\tNOTE")
 			if err != nil {
@@ -310,12 +310,12 @@ func init() {
 	getSessionCmd.Flags().StringVarP(&clientName, "client", "c", "", "Specify the client name")
 	getSessionCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	getSessionCmd.Flags().BoolVarP(&summary, "summary", "s", false, "Output summary of sessions")
-	getSessionCmd.Flags().BoolVar(&hideHeaders, "hide-headers", false, "Output summary of sessions")
-	getSessionCmd.Flags().BoolVar(&dayReport, "day", false, "Hide headers in report")
-	getSessionCmd.Flags().BoolVar(&weekReport, "week", false, "Get report for this current week")
-	getSessionCmd.Flags().StringVar(&monthReport, "month", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
-	getSessionCmd.Flags().StringVar(&yearReport, "year", "", "Get report for a specific year (format: YYYY), leave empty for current year")
-	getSessionCmd.Flags().BoolVar(&allReport, "all", false, "Get all sessions")
+	getSessionCmd.Flags().BoolVarP(&showHeaders, "headers", "H", false, "Output summary of sessions")
+	getSessionCmd.Flags().BoolVarP(&dayReport, "day", "D", false, "Hide headers in report")
+	getSessionCmd.Flags().BoolVarP(&weekReport, "week", "W", false, "Get report for this current week")
+	getSessionCmd.Flags().StringVarP(&monthReport, "month", "M", "", "Get report for a specific month (format: YYYY-MM), leave empty for current month")
+	getSessionCmd.Flags().StringVarP(&yearReport, "year", "Y", "", "Get report for a specific year (format: YYYY), leave empty for current year")
+	getSessionCmd.Flags().BoolVarP(&allReport, "all", "A", false, "Get all sessions")
 	getSessionCmd.Flags().BoolVar(&descendingOrder, "desc", false, "Sort sessions in descending order (defaults to ascending order)")
 	getSessionCmd.Flags().StringVarP(&output, "output", "o", "text", "Specify the output format")
 	getSessionCmd.Flags().Lookup("month").NoOptDefVal = strconv.Itoa(int(currentMonth))
